@@ -1,7 +1,7 @@
 /**
- * Officer Handoff Tool - UT Arlington Student Organizations
- * Pure Vanilla JavaScript Client-Side Application
- * Strictly adheres to zero-backend, zero-credential, local-only specifications.
+ * MavNext — Officer Handoff for Student Organizations
+ * Pure Vanilla JavaScript, zero dependencies, browser-only persistence.
+ * All answers stay in localStorage. Nothing is transmitted.
  */
 
 (function () {
@@ -9,6 +9,8 @@
 
   // --- Constants & Storage Namespace ---
   const STORAGE_KEY = 'uta_officer_handoff_data';
+  const CHAR_LIMIT = 1200;
+  const CHAR_WARN = 1000;
 
   // --- Questionnaire Definitions (All 6 Standard Sections) ---
   const QUESTIONNAIRE_SECTIONS = [
@@ -22,26 +24,26 @@
         {
           id: 'q_mission',
           title: 'Role Mission & Core Purpose',
-          help: 'What is the primary objective of this role and what should the incoming officer strive to accomplish?',
+          help: 'What is the primary objective of this role? What should the incoming officer strive to accomplish?',
           placeholder: 'e.g., Lead executive meetings, maintain organizational alignment with university student life standards, and represent our student chapter at campus fairs.'
         },
         {
           id: 'q_duties_routine',
           title: 'Weekly & Monthly Routines',
-          help: 'Detail regular operational duties, recurring meetings, officer synchs, and routine administration.',
-          placeholder: 'e.g., Every Monday at 6 PM: Chair Executive Board synch. Monthly: Review budget balance with Treasurer and submit monthly event updates on MavOrgs.'
+          help: 'Describe recurring operational duties, standing meetings, officer syncs, and routine administration.',
+          placeholder: 'e.g., Every Monday at 6 PM: Chair Executive Board sync. Monthly: Review budget with Treasurer and submit monthly event updates on MavOrgs.'
         },
         {
           id: 'q_campus_relations',
-          title: 'Key Campus Relationships & Advisor Interactions',
-          help: 'Who are the primary campus advisors, department staff, or campus partners to stay in touch with?',
-          placeholder: 'e.g., Faculty Advisor Dr. Miller (Engineering dept) meets once a month. Student Organizations advisor in University Center Suite B120 assists with MavOrgs rosters.'
+          title: 'Key Campus Relationships & Advisor Contact',
+          help: 'Which campus advisors, department staff, or campus partners should the incoming officer stay in contact with? List roles or offices, not private phone numbers.',
+          placeholder: 'e.g., Faculty Advisor (Engineering dept) — quarterly meetings. Student Organizations office in University Center Suite B120 assists with MavOrgs rosters.'
         },
         {
           id: 'q_success_tips',
           title: 'Officer Success Tips & Recommendations',
           help: 'What habits, communication practices, or practical tips helped you navigate this position effectively?',
-          placeholder: 'e.g., Book campus rooms at least 3 weeks early in the semester. Keep Discord announcements concise and post reminder polls 48 hours prior to meetings.'
+          placeholder: 'e.g., Book campus rooms at least 3 weeks early. Keep Discord announcements concise and post reminder polls 48 hours before meetings.'
         }
       ]
     },
@@ -50,31 +52,31 @@
       title: 'Account Access',
       shortTitle: 'Account Access',
       heading: 'Account Access Transfer Steps',
-      description: 'Document approved procedural steps to transfer administrative ownership. Security Reminder: Document procedural delegation steps only—never write passwords or credentials.',
+      description: 'Document approved procedural steps to transfer administrative ownership. Procedural steps only — never record passwords or credentials.',
       questions: [
         {
           id: 'q_mavorgs_transfer',
           title: 'MavOrgs Organization Management Transfer',
-          help: 'Describe the process to update the primary contact, officer roster, and administrative permissions on MavOrgs.',
-          placeholder: 'e.g., Current President logs into MavOrgs > Organization Roster > Manage Roster. Search incoming officer by NetID, assign Executive Role, then designate as Primary Contact.'
+          help: 'Describe how to update the primary contact, officer roster, and admin permissions on MavOrgs.',
+          placeholder: 'e.g., Log into MavOrgs > Organization Roster > Manage Roster. Search incoming officer by NetID, assign Executive Role, then set as Primary Contact.'
         },
         {
           id: 'q_drive_storage',
           title: 'Cloud Storage & Document Repository Transfer',
-          help: 'Where are shared archives, constitution drafts, and flyers kept, and how is folder ownership transferred?',
-          placeholder: 'e.g., Shared Google Drive containing bylaws, branding logos, and flyers. Outgoing officer transfers folder ownership to the incoming officer’s university email address.'
+          help: 'Where are shared documents kept, and what steps transfer folder ownership?',
+          placeholder: 'e.g., Shared Google Drive with bylaws, branding, and flyers. Outgoing officer transfers root folder ownership to the incoming officer\'s university email address.'
         },
         {
           id: 'q_comms_channels',
           title: 'Communication Channels (Discord, Slack, GroupMe, Teams)',
-          help: 'What is the approved procedure for transferring server ownership, channel administration, or workspace roles?',
-          placeholder: 'e.g., Discord server ownership transfer: Server Settings > Members > Select incoming officer > Transfer Ownership. Retain outgoing officers in an Alumni role.'
+          help: 'What is the approved procedure for transferring server ownership or workspace admin roles?',
+          placeholder: 'e.g., Discord: Server Settings > Members > Select incoming officer > Transfer Ownership. Keep outgoing officers in an Alumni role.'
         },
         {
           id: 'q_social_email',
           title: 'Social Media Accounts & Official Email Transition',
-          help: 'How are Instagram, LinkedIn, or student org email accounts safely handed off without compromising security?',
-          placeholder: 'e.g., Instagram account: Update two-factor verification phone number to incoming officer during the transition meeting. Transfer Meta Business Suite manager access.'
+          help: 'How are Instagram, LinkedIn, or the student org email safely handed off? Describe the procedural steps — no credentials here.',
+          placeholder: 'e.g., Instagram: Update two-factor phone number to incoming officer during the transition meeting. Add incoming officer as Super Admin in Meta Business Suite.'
         }
       ]
     },
@@ -88,26 +90,26 @@
         {
           id: 'q_reregistration',
           title: 'Annual Student Org Re-Registration Timeline',
-          help: 'When does annual registration take place at UTA, and what officer training or roster requirements must be met?',
-          placeholder: 'e.g., Annual re-registration window typically opens in late spring and closes early September on MavOrgs. Mandatory officer orientation modules must be completed.'
+          help: 'When does annual registration take place, and what officer training or roster requirements must be completed?',
+          placeholder: 'e.g., Annual re-registration window typically opens in late spring and closes in early September on MavOrgs. Mandatory officer orientation modules must be completed.'
         },
         {
           id: 'q_activity_fairs',
-          title: 'Activity Fairs & Maverick Stampede Participation',
+          title: 'Activity Fairs & Involvement Fair Participation',
           help: 'When are student involvement fairs held each semester, and how is a table secured?',
-          placeholder: 'e.g., Fall Maverick Stampede Involvement Fair registration opens in July on MavOrgs. Spring fair signup occurs during the first week of January. Bring a banner and QR sign-in.'
+          placeholder: 'e.g., Fall Involvement Fair registration opens in July on MavOrgs. Spring fair signup is in the first week of January. Bring a banner and QR sign-in sheet.'
         },
         {
           id: 'q_room_reservations',
           title: 'Campus Space & Room Reservation Cutoffs',
-          help: 'What are the required reservation windows and booking procedures for campus spaces (e.g., University Center rooms, classrooms)?',
-          placeholder: 'e.g., UC conference rooms and Palo Duro Lounge must be requested via MavOrgs Space Reservation at least 14 business days in advance. General classrooms require 7 days.'
+          help: 'What are the required lead times and booking procedures for campus spaces?',
+          placeholder: 'e.g., UC conference rooms require reservations at least 14 business days in advance via MavOrgs Space Reservation. General classrooms require 7 business days.'
         },
         {
           id: 'q_elections_transitions',
           title: 'Elections & Leadership Transition Timeline',
           help: 'When are nominations opened, elections conducted, and final transition meetings held?',
-          placeholder: 'e.g., Nominations open in March; officer elections take place during the first week of April. Joint transition meetings between outgoing and incoming teams occur in late April.'
+          placeholder: 'e.g., Nominations open in March; elections in the first week of April. Joint transition meetings between outgoing and incoming teams occur in late April.'
         }
       ]
     },
@@ -116,7 +118,7 @@
       title: 'Funding Procedures',
       shortTitle: 'Funding',
       heading: 'Funding Procedures & Financial Workflows',
-      description: 'Explain how your organization handles Student Government funding, off-campus bank accounts, reimbursements, and invoices. Free-text explanation based on observed experience; do not assume UTA policies.',
+      description: 'Explain how your organization handles Student Government funding, bank account transitions, reimbursements, and invoices. Free-text explanation based on observed experience — do not assume UTA policies.',
       questions: [
         {
           id: 'q_sg_funding',
@@ -127,20 +129,20 @@
         {
           id: 'q_bank_signees',
           title: 'Bank Account Signee Transition Workflow',
-          help: 'What is the procedure for updating authorized signers on the organization bank account (if applicable)?',
-          placeholder: 'e.g., Schedule an in-person appointment at Chase Bank branch on Cooper St. Both outgoing and incoming President and Treasurer must bring student IDs and updated officer minutes.'
+          help: 'What is the procedure for updating authorized signers on the organization bank account, if applicable?',
+          placeholder: 'e.g., Schedule an in-person appointment at the bank. Both outgoing and incoming President and Treasurer must bring student IDs and updated officer meeting minutes.'
         },
         {
           id: 'q_reimbursements',
           title: 'Reimbursement & Payment Process',
-          help: 'What is the internal process for members or officers requesting reimbursement for authorized event expenses?',
-          placeholder: 'e.g., Members submit itemized receipts via our Google Form within 14 days of purchase. The Treasurer verifies budget availability and issues check or bank disbursement within 5 business days.'
+          help: 'What is the internal process for requesting reimbursement for authorized event expenses?',
+          placeholder: 'e.g., Submit itemized receipts via our internal form within 14 days of purchase. The Treasurer verifies budget availability and issues reimbursement within 5 business days.'
         },
         {
           id: 'q_vendor_invoices',
           title: 'Invoicing & Vendor Purchase Guidelines',
-          help: 'How are outside vendors (e.g., merchandise printers, catering, special equipment) invoiced and paid?',
-          placeholder: 'e.g., Request a W-9 and itemized estimate from vendors prior to placing orders. Ensure all catering on campus complies with university food policy guidelines.'
+          help: 'How are outside vendors invoiced and paid? What documentation is required?',
+          placeholder: 'e.g., Request a W-9 and itemized estimate from vendors before placing orders. Ensure all campus catering complies with university food policy.'
         }
       ]
     },
@@ -155,58 +157,58 @@
           id: 'q_signature_events',
           title: 'Major Signature Events & Successful Practices',
           help: 'Which events were most successful this year, and what key factors made them work well?',
-          placeholder: 'e.g., Annual Tech Hackathon in October drew 120 attendees. Holding sponsor workshops in the afternoon and offering pizza at 7 PM kept student retention high.'
+          placeholder: 'e.g., Annual Tech Hackathon in October drew 120 attendees. Sponsor workshops in the afternoon and food at 7 PM kept retention high.'
         },
         {
           id: 'q_pitfalls_lessons',
           title: 'Common Pitfalls & Lessons Learned',
-          help: 'What did not go as expected, and what adjustments should the incoming officer make in the future?',
-          placeholder: 'e.g., Do not schedule major events during midterm weeks. University Center audiovisual equipment must be tested with staff at least 1 hour before doors open.'
+          help: 'What did not go as expected? What adjustments should the incoming officer make?',
+          placeholder: 'e.g., Avoid scheduling major events during midterm weeks. University Center AV equipment must be tested with staff at least 1 hour before doors open.'
         },
         {
           id: 'q_venues_logistics',
           title: 'Recommended Campus Venues & Setup Logistics',
-          help: 'Which campus locations, room configurations, and AV setups worked best for your organization’s activities?',
-          placeholder: 'e.g., UC Rio Grande Room is great for interactive workshops (round tables of 6). Nedderman Hall atrium is ideal for casual showcases and project demos.'
+          help: 'Which campus locations, room configurations, and AV setups worked best for your activities?',
+          placeholder: 'e.g., UC Rio Grande Room is great for interactive workshops (round tables of 6). Nedderman Hall atrium works well for casual showcases.'
         },
         {
           id: 'q_attendance_promo',
           title: 'Attendance Promotion & Marketing Channels',
-          help: 'Which promotional strategies produced the highest turnout among UTA students?',
-          placeholder: 'e.g., Instagram carousel posts 5 days in advance + announcements in major Discord channels + physical flyers in the SEIR and Nedderman bulletin boards.'
+          help: 'Which promotional strategies produced the highest student turnout?',
+          placeholder: 'e.g., Instagram carousel posts 5 days in advance + Discord announcements + physical flyers in SEIR and Nedderman bulletin boards.'
         }
       ]
     },
     {
       id: 6,
       title: 'Unfinished Commitments',
-      shortTitle: 'Unfinished',
-      heading: 'Unfinished Commitments & Next Steps',
-      description: 'Flag open initiatives, pending vendor contracts, active university inquiries, and immediate action items for the incoming officer.',
+      shortTitle: 'Commitments',
+      heading: 'Open Commitments & Immediate Next Steps',
+      description: 'Flag unresolved business, pending vendor orders, active university inquiries, and immediate action items for the incoming officer.',
       questions: [
         {
           id: 'q_pending_contracts',
           title: 'Pending Vendor Orders & Open Invoices',
-          help: 'Are there any active vendor orders, unfulfilled contracts, or outstanding balances owed?',
-          placeholder: 'e.g., Pending invoice for 100 club t-shirts with CustomInk ($850) - delivery expected on August 15th to the Student Org mailroom.'
+          help: 'Are there active vendor orders, unfulfilled contracts, or outstanding balances?',
+          placeholder: 'e.g., Pending invoice for 100 club t-shirts with a vendor ($850) — delivery expected mid-August to the Student Org mailroom.'
         },
         {
           id: 'q_university_inquiries',
           title: 'Active Campus Inquiries & University Approvals',
-          help: 'Are there any open room reservation requests, pending advisor signatures, or administrative questions awaiting response?',
-          placeholder: 'e.g., Submitted room reservation for Fall Kickoff in UC Bluebonnet Ballroom; awaiting final approval notification from Student Event Services.'
+          help: 'Are there open room reservations, pending advisor signatures, or administrative questions awaiting a response?',
+          placeholder: 'e.g., Submitted room reservation for Fall Kickoff in UC Bluebonnet Ballroom — awaiting final approval from Student Event Services.'
         },
         {
           id: 'q_ongoing_initiatives',
           title: 'Incomplete Projects & Multi-Semester Initiatives',
-          help: 'What projects or partnerships are mid-stream and need continued leadership by the incoming officer?',
-          placeholder: 'e.g., In discussion with UTA IEEE chapter for a joint robotics workshop in November. Outline draft is saved in Google Drive / Partnerships.'
+          help: 'What projects or partnerships are mid-stream and need continued leadership?',
+          placeholder: 'e.g., In discussion with another student chapter for a joint workshop in November. Draft outline is in Google Drive / Partnerships folder.'
         },
         {
           id: 'q_immediate_next_steps',
           title: 'Top 3 Immediate Next Steps (First 14 Days)',
-          help: 'What are the 3 most urgent tasks the incoming officer should execute immediately upon taking office?',
-          placeholder: 'e.g., 1. Complete primary contact transition on MavOrgs. 2. Schedule summer intro synch with Faculty Advisor Dr. Miller. 3. Finalize table registration for Fall Activity Fair.'
+          help: 'What are the 3 most urgent tasks the incoming officer should handle right away?',
+          placeholder: 'e.g., 1. Complete MavOrgs primary contact transfer. 2. Schedule intro meeting with Faculty Advisor. 3. Confirm pending vendor delivery with Treasurer.'
         }
       ]
     }
@@ -225,12 +227,11 @@
     answers: {}
   };
 
-  // Populate answer keys in blank state
   QUESTIONNAIRE_SECTIONS.forEach(sec => {
     sec.questions.forEach(q => {
       defaultState.answers[q.id] = {
         text: '',
-        status: 'standard' // 'standard' | 'unknown' | 'na' | 'unresolved'
+        status: 'standard'
       };
     });
   });
@@ -239,6 +240,7 @@
   let appState = JSON.parse(JSON.stringify(defaultState));
   let currentScreen = 'welcome';
   let saveTimeout = null;
+  let hasSavedDraft = false;
 
   // --- Synthetic Demonstration Data (Fictional UTA Student Org) ---
   const SYNTHETIC_DEMO_DATA = {
@@ -246,54 +248,49 @@
       orgName: 'UTA Maverick Robotics Society',
       officerRole: 'President',
       officerRoleOther: '',
-      outgoingOfficer: 'Maya Lin (Outgoing President, Class of \'26)',
-      incomingOfficer: 'David Kim (Incoming President, Class of \'27)',
+      outgoingOfficer: 'Maya Lin (Outgoing President)',
+      incomingOfficer: 'David Kim (Incoming President)',
       lastReviewedDate: new Date().toISOString().split('T')[0]
     },
     answers: {
-      // Section 1
       q_mission: {
         text: 'Lead the executive board of 6 officers, represent the Maverick Robotics Society in the College of Engineering Student Council, and coordinate competitive robotics teams for regional university challenges.',
         status: 'standard'
       },
       q_duties_routine: {
-        text: 'Weekly: Host executive board synch every Tuesday at 6:00 PM in NH 100. Monthly: Send general body newsletter via MavOrgs email tool and reconcile treasury balance with treasurer before the 25th.',
+        text: 'Weekly: Host executive board sync every Tuesday at 6:00 PM in NH 100. Monthly: Send general body newsletter via MavOrgs email tool and reconcile treasury balance with treasurer before the 25th.',
         status: 'standard'
       },
       q_campus_relations: {
-        text: 'Faculty Advisor: Dr. Raymond Torres (Mechanical & Aerospace Engineering). Meets quarterly. Key contact for lab access: Engineering Lab Coordinator Mr. Henderson in Woolf Hall.',
+        text: 'Faculty Advisor: Mechanical & Aerospace Engineering department — quarterly meetings. Key contact for lab access: Engineering Lab Coordinator in Woolf Hall. Student Org office (UC Suite B120) for MavOrgs roster changes.',
         status: 'standard'
       },
       q_success_tips: {
         text: 'Submit room reservations at least 3 weeks before major workshop dates. Delegate team leads for sub-projects early so the president can focus on sponsorship and university compliance.',
         status: 'standard'
       },
-
-      // Section 2
       q_mavorgs_transfer: {
         text: 'Log into MavOrgs > Navigate to Maverick Robotics Society page > Manage Organization > Roster. Find David Kim, click pencil icon to edit membership status to President, and select Set as Primary Contact.',
         status: 'standard'
       },
       q_drive_storage: {
-        text: 'Shared Google Drive contains all CAD files, constitution, sponsorship brochures, and past competition docs. Outgoing president transfers primary ownership of root folder to incoming president’s netid email.',
+        text: 'Shared Google Drive contains all CAD files, constitution, sponsorship brochures, and past competition docs. Outgoing president transfers primary ownership of root folder to incoming president\'s netid@mavs.uta.edu address.',
         status: 'standard'
       },
       q_comms_channels: {
-        text: 'Discord Server (850 members): Transfer server ownership via Server Settings > Members > David Kim > Transfer Ownership. Demote outgoing seniors to "Alumni / Veteran Member" role to preserve chat history.',
+        text: 'Discord Server (850 members): Transfer server ownership via Server Settings > Members > David Kim > Transfer Ownership. Keep outgoing seniors in an "Alumni / Veteran Member" role to preserve chat history.',
         status: 'standard'
       },
       q_social_email: {
-        text: 'Instagram (@utamediarobotics): Set 2FA recovery phone to the incoming president during transition session. LinkedIn Organization page: Add incoming president as Super Admin under Page Settings.',
+        text: 'Instagram (@utamavrobotics): Update 2FA recovery phone to the incoming president during transition meeting. LinkedIn Organization page: Add incoming president as Super Admin under Page Settings.',
         status: 'standard'
       },
-
-      // Section 3
       q_reregistration: {
         text: 'Annual re-registration on MavOrgs takes place in late April through August. President and Treasurer must complete online compliance training modules and upload updated constitution.',
         status: 'standard'
       },
       q_activity_fairs: {
-        text: 'Fall Activity Fair (Maverick Stampede): Register via MavOrgs form by late July. Spring Activity Fair: Register by January 10th. Setup interactive robot driving station at table to attract recruits.',
+        text: 'Fall Activity Fair: Register via MavOrgs form by late July. Spring Activity Fair: Register by January 10th. Set up an interactive robot driving station at the table to attract recruits.',
         status: 'standard'
       },
       q_room_reservations: {
@@ -304,28 +301,24 @@
         text: 'Elections are held annually during the third week of April via MavOrgs anonymous voting ballot. Official joint transition meeting is held during the first week of May.',
         status: 'standard'
       },
-
-      // Section 4
       q_sg_funding: {
         text: 'Apply for Student Government annual allocation in February. For travel and competition funding, submit supplemental funding requests at least 30 days prior to the travel date with itemized quotes.',
         status: 'standard'
       },
       q_bank_signees: {
-        text: 'Off-campus org checking account is with Wells Fargo on Center St. Outgoing and incoming President & Treasurer must visit branch in-person with signed meeting minutes and UTA NetID cards.',
+        text: 'Off-campus org checking account requires outgoing and incoming President & Treasurer to visit the branch in-person with signed meeting minutes and UTA NetID cards to update authorized signers.',
         status: 'standard'
       },
       q_reimbursements: {
-        text: 'Officers or project leads submit itemized receipts and tax-exemption verification through our internal expense Google Form within 14 days of purchase. Treasurer issues reimbursement check.',
+        text: 'Officers or project leads submit itemized receipts and purchase verification through our internal expense form within 14 days of purchase. Treasurer issues reimbursement check.',
         status: 'standard'
       },
       q_vendor_invoices: {
-        text: 'For parts purchases above $500 (e.g., custom motor controllers or aluminum stock), request official invoice with UTA tax-exempt certificate provided by faculty advisor.',
+        text: 'For parts purchases above $500 (e.g., custom motor controllers), request official invoice with UTA tax-exempt certificate provided by the faculty advisor.',
         status: 'standard'
       },
-
-      // Section 5
       q_signature_events: {
-        text: 'Maverick Combat Robotics Invitational (March): 140 participants. Live video stream to Discord and food truck parking outside Woolf Hall made this our highest engagement event of the academic year.',
+        text: 'Maverick Combat Robotics Invitational (March): 140 participants. Live video stream to Discord and food truck parking outside Woolf Hall made this our highest engagement event of the year.',
         status: 'standard'
       },
       q_pitfalls_lessons: {
@@ -337,25 +330,23 @@
         status: 'standard'
       },
       q_attendance_promo: {
-        text: 'Best attendance came from announcements in freshman intro to engineering classes during week 2, paired with video reels posted on Instagram.',
+        text: 'Best attendance came from announcements in freshman intro to engineering classes during week 2, paired with video reels posted on Instagram and Discord.',
         status: 'standard'
       },
-
-      // Section 6 (With Flagged Unfinished Items)
       q_pending_contracts: {
-        text: 'Pending invoice #8492 with PCBWay ($380) for summer competition circuit boards. Order is placed, awaiting shipment confirmation and final receipt.',
+        text: 'Pending invoice with a PCB manufacturer (~$380) for summer competition circuit boards. Order placed — awaiting shipment confirmation and final receipt.',
         status: 'unresolved'
       },
       q_university_inquiries: {
-        text: 'Awaiting response from Student Event Services regarding approval for outdoor arena canopy reservation on University Green for the Fall Kickoff.',
+        text: 'Awaiting response from Student Event Services regarding approval for outdoor canopy reservation on University Green for the Fall Kickoff event.',
         status: 'unresolved'
       },
       q_ongoing_initiatives: {
-        text: 'Exploring partnership with UTA SAE Racing Team for a shared composite materials workshop in October. Draft outline is in Google Drive.',
+        text: 'Exploring partnership with UTA SAE Racing Team for a shared composite materials workshop in October. Draft outline is in Google Drive / Partnerships folder.',
         status: 'standard'
       },
       q_immediate_next_steps: {
-        text: '1. Finalize MavOrgs primary contact transfer with Student Org office. 2. Meet with Dr. Torres to confirm Fall lab hours. 3. Confirm PCBWay delivery receipt with Treasurer.',
+        text: '1. Finalize MavOrgs primary contact transfer with Student Org office. 2. Meet with Faculty Advisor to confirm Fall lab hours. 3. Confirm PCB vendor delivery receipt with Treasurer.',
         status: 'unresolved'
       }
     }
@@ -367,6 +358,7 @@
   function cacheDomElements() {
     elements.saveStatus = document.getElementById('save-status');
     elements.saveStatusText = document.getElementById('save-status-text');
+    elements.saveDot = document.getElementById('save-dot');
     elements.stepperNav = document.getElementById('stepper-nav');
     elements.stepperProgressFill = document.getElementById('stepper-progress-fill');
     elements.stepperItems = document.querySelectorAll('.step-item');
@@ -383,6 +375,10 @@
     elements.btnWelcomeSample = document.getElementById('btn-welcome-sample');
     elements.btnLoadSample = document.getElementById('btn-load-sample');
     elements.btnClearData = document.getElementById('btn-clear-data');
+    elements.resumeBanner = document.getElementById('resume-banner');
+    elements.btnResumeHandoff = document.getElementById('btn-resume-handoff');
+    elements.btnStartFresh = document.getElementById('btn-start-fresh');
+    elements.startActions = document.getElementById('start-actions');
 
     // Review Screen Controls
     elements.metricAnswered = document.getElementById('metric-answered-count');
@@ -409,12 +405,17 @@
     elements.docCalloutUnresolvedBox = document.getElementById('doc-callout-unresolved-box');
     elements.docUnresolvedList = document.getElementById('doc-unresolved-list');
 
-    // Modal Clear Elements
+    // Modal: Clear Data
     elements.modalClearConfirm = document.getElementById('modal-clear-confirm');
     elements.btnModalClearCancel = document.getElementById('btn-modal-clear-cancel');
     elements.btnModalClearConfirm = document.getElementById('btn-modal-clear-confirm');
 
-    // Toast element
+    // Modal: Demo overwrite
+    elements.modalDemoConfirm = document.getElementById('modal-demo-confirm');
+    elements.btnModalDemoCancel = document.getElementById('btn-modal-demo-cancel');
+    elements.btnModalDemoConfirm = document.getElementById('btn-modal-demo-confirm');
+
+    // Toast & footer
     elements.toast = document.getElementById('toast');
     elements.footerRestart = document.getElementById('footer-restart-link');
   }
@@ -443,36 +444,38 @@
           </div>
 
           <div class="question-toolbar">
-            <span class="toolbar-label">Response Status:</span>
+            <span class="toolbar-label">Response status:</span>
             <div class="status-button-group" role="group" aria-label="Status for ${escapeHtml(q.title)}">
-              <button type="button" class="status-btn selected-standard" data-qid="${q.id}" data-status="standard" title="Answer with standard guidance">
+              <button type="button" class="status-btn selected-standard" data-qid="${q.id}" data-status="standard" aria-pressed="true">
                 Standard Response
               </button>
-              <button type="button" class="status-btn" data-qid="${q.id}" data-status="unknown" title="Mark as unknown / research needed">
+              <button type="button" class="status-btn" data-qid="${q.id}" data-status="unknown" aria-pressed="false">
                 Mark as Unknown
               </button>
-              <button type="button" class="status-btn" data-qid="${q.id}" data-status="na" title="Not applicable to this specific role">
-                Not Applicable (N/A)
+              <button type="button" class="status-btn" data-qid="${q.id}" data-status="na" aria-pressed="false">
+                Not Applicable
               </button>
-              <button type="button" class="status-btn" data-qid="${q.id}" data-status="unresolved" title="Flag as an unresolved commitment requiring incoming officer action">
+              <button type="button" class="status-btn" data-qid="${q.id}" data-status="unresolved" aria-pressed="false">
                 Flag as Unresolved
               </button>
             </div>
           </div>
 
           <div class="question-input-wrapper">
-            <textarea 
-              id="input-${q.id}" 
-              class="form-textarea question-textarea" 
+            <textarea
+              id="input-${q.id}"
+              class="form-textarea question-textarea"
               placeholder="${escapeHtml(q.placeholder)}"
               aria-label="${escapeHtml(q.title)}"
+              maxlength="${CHAR_LIMIT}"
               rows="4"></textarea>
+            <div class="char-counter" id="counter-${q.id}" aria-live="polite">0 / ${CHAR_LIMIT}</div>
           </div>
         `;
 
         container.appendChild(card);
 
-        // Attach Question Status Switchers
+        // Status button listeners
         const statusButtons = card.querySelectorAll('.status-btn');
         statusButtons.forEach(btn => {
           btn.addEventListener('click', () => {
@@ -483,7 +486,7 @@
           });
         });
 
-        // Attach Textarea Input Listener
+        // Textarea listener
         const textarea = card.querySelector(`#input-${q.id}`);
         textarea.addEventListener('input', () => {
           if (!appState.answers[q.id]) {
@@ -510,18 +513,33 @@
     const card = document.getElementById(`card-${qid}`);
     const textarea = document.getElementById(`input-${qid}`);
     const badge = document.getElementById(`badge-${qid}`);
+    const counter = document.getElementById(`counter-${qid}`);
     if (!card || !textarea || !badge) return;
 
     const answerData = appState.answers[qid] || { text: '', status: 'standard' };
     const status = answerData.status || 'standard';
     const textVal = answerData.text || '';
 
-    // Update status buttons active classes
+    // Update character counter
+    if (counter) {
+      const len = textVal.length;
+      counter.textContent = `${len} / ${CHAR_LIMIT}`;
+      counter.className = 'char-counter';
+      if (len >= CHAR_LIMIT) {
+        counter.classList.add('at-limit');
+      } else if (len >= CHAR_WARN) {
+        counter.classList.add('near-limit');
+      }
+    }
+
+    // Update status button active/pressed states
     const buttons = card.querySelectorAll('.status-btn');
     buttons.forEach(btn => {
       const bStatus = btn.getAttribute('data-status');
       btn.className = 'status-btn';
-      if (bStatus === status) {
+      const isSelected = bStatus === status;
+      btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      if (isSelected) {
         btn.classList.add(`selected-${bStatus}`);
       }
     });
@@ -529,7 +547,7 @@
     // Reset card highlight classes
     card.classList.remove('is-unresolved', 'is-unknown', 'is-na');
 
-    // Update Card & Badge appearance
+    // Update badge and card styling
     if (status === 'unresolved') {
       card.classList.add('is-unresolved');
       badge.className = 'status-badge badge-unresolved';
@@ -543,7 +561,6 @@
       badge.className = 'status-badge badge-na';
       badge.textContent = 'Not Applicable';
     } else {
-      // standard
       if (textVal.trim().length > 0) {
         badge.className = 'status-badge badge-answered';
         badge.textContent = 'Answered';
@@ -577,7 +594,9 @@
     if (elements.officerRoleOther) elements.officerRoleOther.value = appState.meta.officerRoleOther || '';
     if (elements.outgoingOfficer) elements.outgoingOfficer.value = appState.meta.outgoingOfficer || '';
     if (elements.incomingOfficer) elements.incomingOfficer.value = appState.meta.incomingOfficer || '';
-    if (elements.lastReviewedDate) elements.lastReviewedDate.value = appState.meta.lastReviewedDate || new Date().toISOString().split('T')[0];
+    if (elements.lastReviewedDate) {
+      elements.lastReviewedDate.value = appState.meta.lastReviewedDate || new Date().toISOString().split('T')[0];
+    }
   }
 
   function handleRoleChange(selectedRole) {
@@ -612,6 +631,34 @@
     elements.lastReviewedDate.addEventListener('change', handleMetaInput);
   }
 
+  // --- Draft Detection ---
+  function detectDraft() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) return false;
+      const parsed = JSON.parse(stored);
+      // A meaningful draft has at least org name or some answered text
+      if (!parsed || !parsed.meta) return false;
+      const hasOrgName = parsed.meta.orgName && parsed.meta.orgName.trim().length > 0;
+      const hasAnswers = parsed.answers && Object.values(parsed.answers).some(a => a.text && a.text.trim().length > 0);
+      return hasOrgName || hasAnswers;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function updateResumeBanner() {
+    hasSavedDraft = detectDraft();
+    if (elements.resumeBanner) {
+      if (hasSavedDraft) {
+        elements.resumeBanner.classList.add('has-draft');
+        // Hide the primary start actions below the form when resume is shown
+      } else {
+        elements.resumeBanner.classList.remove('has-draft');
+      }
+    }
+  }
+
   // --- Local Storage Persistence ---
   function loadFromLocalStorage() {
     try {
@@ -619,11 +666,9 @@
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed && typeof parsed === 'object') {
-          // Merge metadata
           if (parsed.meta) {
             appState.meta = Object.assign({}, defaultState.meta, parsed.meta);
           }
-          // Merge answers
           if (parsed.answers) {
             QUESTIONNAIRE_SECTIONS.forEach(sec => {
               sec.questions.forEach(q => {
@@ -633,11 +678,12 @@
               });
             });
           }
-          showToast('Loaded saved handoff draft from this browser.');
+          showToast('Loaded saved draft from this browser.');
         }
       }
     } catch (err) {
-      console.warn('Could not read existing local draft:', err);
+      console.warn('Could not read local draft:', err);
+      showToast('Could not load your saved draft — it may have been corrupted. Starting fresh.');
     }
   }
 
@@ -645,34 +691,38 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
       indicateSaved(true);
+      updateResumeBanner();
     } catch (err) {
-      console.error('Failed to save answers to localStorage:', err);
+      console.error('Failed to save to localStorage:', err);
       indicateSaved(false);
     }
   }
 
   function scheduleSave() {
     if (elements.saveStatusText) {
-      elements.saveStatusText.textContent = 'Saving locally...';
+      elements.saveStatusText.textContent = 'Saving…';
     }
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => {
       saveToLocalStorage();
-    }, 250);
+    }, 300);
   }
 
   function indicateSaved(success) {
-    if (!elements.saveStatusText) return;
+    if (!elements.saveStatusText || !elements.saveDot) return;
     if (success) {
       elements.saveStatusText.textContent = 'Saved to browser';
+      elements.saveDot.style.background = '#22C55E';
     } else {
-      elements.saveStatusText.textContent = 'Local save failed';
+      elements.saveStatusText.textContent = 'Save failed — storage may be full';
+      elements.saveDot.style.background = '#DC2626';
     }
   }
 
   // --- Clear Answers Protocol ---
   function openClearModal() {
     elements.modalClearConfirm.classList.remove('hidden');
+    // Focus on Cancel (safe default)
     elements.btnModalClearCancel.focus();
   }
 
@@ -690,16 +740,37 @@
     syncMetaFormFromState();
     syncAllQuestionCardsFromState();
     closeClearModal();
+    updateResumeBanner();
+    if (elements.saveStatusText) elements.saveStatusText.textContent = 'No draft yet';
+    if (elements.saveDot) elements.saveDot.style.background = '#64748B';
     navigateToScreen('welcome');
     showToast('All answers have been cleared from this browser.');
+  }
+
+  // --- Demo Data Loading ---
+  function loadSyntheticDemo() {
+    appState = JSON.parse(JSON.stringify(SYNTHETIC_DEMO_DATA));
+    syncMetaFormFromState();
+    syncAllQuestionCardsFromState();
+    saveToLocalStorage();
+    showToast('Sample data loaded: UTA Maverick Robotics Society (fictional).');
+    navigateToScreen('1');
+  }
+
+  function requestLoadDemo() {
+    if (hasSavedDraft) {
+      // Show overwrite confirmation
+      elements.modalDemoConfirm.classList.remove('hidden');
+      elements.btnModalDemoCancel.focus();
+    } else {
+      loadSyntheticDemo();
+    }
   }
 
   // --- Navigation & Screen Management ---
   function navigateToScreen(targetScreen) {
     const screens = document.querySelectorAll('.app-screen');
-    screens.forEach(screen => {
-      screen.classList.remove('active');
-    });
+    screens.forEach(screen => screen.classList.remove('active'));
 
     const activeScreenElem = document.getElementById(`screen-${targetScreen}`) || document.getElementById(`screen-section-${targetScreen}`);
     if (activeScreenElem) {
@@ -709,10 +780,8 @@
     currentScreen = targetScreen;
     updateStepperUI(targetScreen);
 
-    // Scroll to top of content
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Conditional screen renderers
     if (targetScreen === 'review') {
       renderReviewScreen();
     } else if (targetScreen === 'summary') {
@@ -723,7 +792,6 @@
   function updateStepperUI(activeStep) {
     if (!elements.stepperNav) return;
 
-    // Hide stepper on welcome screen for cleaner intro
     if (activeStep === 'welcome') {
       elements.stepperNav.classList.add('hidden');
       return;
@@ -734,47 +802,50 @@
     const stepOrder = ['welcome', '1', '2', '3', '4', '5', '6', 'review', 'summary'];
     const activeIdx = stepOrder.indexOf(String(activeStep));
 
-    // Progress bar calculation
     const percentage = activeIdx >= 0 ? Math.round(((activeIdx) / (stepOrder.length - 1)) * 100) : 0;
     if (elements.stepperProgressFill) {
       elements.stepperProgressFill.style.width = `${percentage}%`;
     }
 
-    // Step items styling
     elements.stepperItems.forEach(item => {
       const stepKey = item.getAttribute('data-step');
       const itemIdx = stepOrder.indexOf(stepKey);
+      const btn = item.querySelector('.step-btn');
 
       item.classList.remove('active', 'completed');
       if (itemIdx === activeIdx) {
         item.classList.add('active');
-      } else if (itemIdx < activeIdx) {
-        item.classList.add('completed');
+        if (btn) btn.setAttribute('aria-current', 'step');
+      } else {
+        if (btn) btn.removeAttribute('aria-current');
+        if (itemIdx < activeIdx) {
+          item.classList.add('completed');
+        }
       }
     });
   }
 
-  // --- Validation Helper ---
+  // --- Validation ---
   function validateWelcomeForm() {
     if (!appState.meta.orgName || appState.meta.orgName.trim() === '') {
-      showToast('Please enter your Student Organization Name before proceeding.');
+      showToast('Please enter your organization name before continuing.');
       elements.orgName.focus();
       return false;
     }
     if (!appState.meta.officerRole || appState.meta.officerRole === '') {
-      showToast('Please select the Officer Role being handed off.');
+      showToast('Please select the officer role being handed off.');
       elements.officerRole.focus();
       return false;
     }
     if (appState.meta.officerRole === 'Other' && (!appState.meta.officerRoleOther || appState.meta.officerRoleOther.trim() === '')) {
-      showToast('Please specify the custom officer role name.');
+      showToast('Please specify the custom officer role title.');
       elements.officerRoleOther.focus();
       return false;
     }
     return true;
   }
 
-  // --- Review Screen Audit Logic ---
+  // --- Review Screen ---
   function renderReviewScreen() {
     let countAnswered = 0;
     let countUnresolved = 0;
@@ -792,7 +863,6 @@
         } else if (item.status === 'na') {
           countNa++;
         } else {
-          // standard
           if (item.text && item.text.trim().length > 0) {
             countAnswered++;
           } else {
@@ -808,27 +878,25 @@
     elements.metricNa.textContent = countNa;
     elements.metricMissing.textContent = countMissing;
 
-    // Render Section-by-Section Audit List
     elements.reviewAccordion.innerHTML = '';
 
     QUESTIONNAIRE_SECTIONS.forEach(sec => {
       const secBlock = document.createElement('div');
       secBlock.className = 'review-section-block';
+      secBlock.setAttribute('role', 'listitem');
 
-      // Section Header
       const header = document.createElement('div');
       header.className = 'review-section-header';
       header.innerHTML = `
         <div class="review-sec-title-group">
-          <span class="review-sec-num">${sec.id}</span>
+          <span class="review-sec-num" aria-hidden="true">${sec.id}</span>
           <span class="review-sec-title">${escapeHtml(sec.heading)}</span>
         </div>
         <button type="button" class="btn btn-outline btn-sm btn-edit-section" data-target="${sec.id}">
-          ✏️ Edit Section ${sec.id}
+          Edit Section ${sec.id}
         </button>
       `;
 
-      // Items list
       const itemsList = document.createElement('div');
       itemsList.className = 'review-items-list';
 
@@ -838,22 +906,22 @@
         row.className = 'review-item-row';
 
         let badgeHtml = '';
-        let snippetText = item.text && item.text.trim() ? item.text.trim() : 'No response provided yet.';
+        let snippetText = item.text && item.text.trim() ? item.text.trim() : 'No response provided.';
 
         if (item.status === 'unresolved') {
           badgeHtml = '<span class="status-badge badge-unresolved">Action Required</span>';
         } else if (item.status === 'unknown') {
           badgeHtml = '<span class="status-badge badge-unknown">Marked Unknown</span>';
-          snippetText = item.text && item.text.trim() ? item.text.trim() : 'Flagged as unknown at this time.';
+          snippetText = item.text && item.text.trim() ? item.text.trim() : 'Flagged as unknown.';
         } else if (item.status === 'na') {
           badgeHtml = '<span class="status-badge badge-na">Not Applicable</span>';
-          snippetText = item.text && item.text.trim() ? item.text.trim() : 'Marked as not applicable.';
+          snippetText = item.text && item.text.trim() ? item.text.trim() : 'Marked not applicable.';
         } else {
           if (item.text && item.text.trim().length > 0) {
-            badgeHtml = '<span class="status-badge badge-answered">Completed</span>';
+            badgeHtml = '<span class="status-badge badge-answered">Answered</span>';
           } else {
-            badgeHtml = '<span class="status-badge badge-missing">Missing / Blank</span>';
-            snippetText = 'No text entered. Will be flagged as [Not Provided] in summary.';
+            badgeHtml = '<span class="status-badge badge-missing">Missing</span>';
+            snippetText = 'No text entered — will appear as [Not Provided] in the summary.';
           }
         }
 
@@ -873,31 +941,28 @@
       secBlock.appendChild(itemsList);
       elements.reviewAccordion.appendChild(secBlock);
 
-      // Attach jump-to-section edit listener
-      const editBtn = secBlock.querySelector('.btn-edit-section');
-      editBtn.addEventListener('click', () => {
+      secBlock.querySelector('.btn-edit-section').addEventListener('click', () => {
         navigateToScreen(sec.id);
       });
     });
   }
 
-  // --- Summary Screen Generation (Strict Anti-Hallucination) ---
+  // --- Summary Screen (Anti-Hallucination) ---
   function renderSummaryScreen() {
     const meta = appState.meta;
 
-    // Header metadata presentation
-    elements.docDispOrgName.textContent = meta.orgName || 'UTA Student Organization';
+    elements.docDispOrgName.textContent = meta.orgName || 'Student Organization';
     const roleText = meta.officerRole === 'Other' && meta.officerRoleOther ? meta.officerRoleOther : (meta.officerRole || 'Officer');
     elements.docDispRole.textContent = roleText;
-    elements.docDispOutgoing.textContent = meta.outgoingOfficer || 'Outgoing Officer';
-    elements.docDispIncoming.textContent = meta.incomingOfficer || 'Incoming Officer';
-    
-    // Format date nicely
+    elements.docDispOutgoing.textContent = meta.outgoingOfficer || '—';
+    elements.docDispIncoming.textContent = meta.incomingOfficer || '—';
+
+    // Format date — use the value the officer set; do not auto-update it
     if (meta.lastReviewedDate) {
       try {
         const parts = meta.lastReviewedDate.split('-');
         if (parts.length === 3) {
-          const d = new Date(parts[0], parts[1] - 1, parts[2]);
+          const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
           elements.docDispDate.textContent = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
         } else {
           elements.docDispDate.textContent = meta.lastReviewedDate;
@@ -906,10 +971,10 @@
         elements.docDispDate.textContent = meta.lastReviewedDate;
       }
     } else {
-      elements.docDispDate.textContent = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      elements.docDispDate.textContent = '—';
     }
 
-    // Compile Unresolved Action Items Callout
+    // Build unresolved callout
     const unresolvedItems = [];
     QUESTIONNAIRE_SECTIONS.forEach(sec => {
       sec.questions.forEach(q => {
@@ -919,7 +984,7 @@
             secId: sec.id,
             secTitle: sec.shortTitle,
             title: q.title,
-            note: item.text && item.text.trim() ? item.text.trim() : 'Unresolved commitment flagged for incoming officer action.'
+            note: item.text && item.text.trim() ? item.text.trim() : 'Unresolved — incoming officer to follow up.'
           });
         }
       });
@@ -927,24 +992,24 @@
 
     elements.docUnresolvedList.innerHTML = '';
     if (unresolvedItems.length === 0) {
-      elements.docDispStatusBadge.textContent = 'All Fields Accounted For';
+      elements.docDispStatusBadge.textContent = 'No unresolved items';
       elements.docCalloutUnresolvedBox.style.display = 'block';
       elements.docUnresolvedList.innerHTML = `
         <div class="unresolved-item" style="border-color: #A7F3D0; background-color: #F0FDF4;">
           <div class="unresolved-item-content">
-            <span class="unresolved-item-title" style="color: #065F46;">No unresolved commitments or open questions flagged.</span>
-            <p class="unresolved-item-note" style="color: #065F46;">Verify all procedures with the incoming officer during your final in-person transition meeting.</p>
+            <span class="unresolved-item-title" style="color: #065F46;">No unresolved commitments flagged.</span>
+            <p class="unresolved-item-note" style="color: #065F46;">Verify all procedures with the incoming officer during your in-person transition meeting.</p>
           </div>
         </div>
       `;
     } else {
-      elements.docDispStatusBadge.textContent = `${unresolvedItems.length} Action Items Pending`;
+      elements.docDispStatusBadge.textContent = `${unresolvedItems.length} Action Item${unresolvedItems.length !== 1 ? 's' : ''} Pending`;
       elements.docCalloutUnresolvedBox.style.display = 'block';
       unresolvedItems.forEach((u, i) => {
         const itemElem = document.createElement('div');
         itemElem.className = 'unresolved-item';
         itemElem.innerHTML = `
-          <input type="checkbox" class="unresolved-checkbox" id="unres-check-${i}" aria-label="Action Item: ${escapeHtml(u.title)}">
+          <input type="checkbox" class="unresolved-checkbox" id="unres-check-${i}" aria-label="Action: ${escapeHtml(u.title)}">
           <div class="unresolved-item-content">
             <label for="unres-check-${i}" class="unresolved-item-title">
               [Section ${u.secId}: ${escapeHtml(u.secTitle)}] ${escapeHtml(u.title)}
@@ -956,7 +1021,7 @@
       });
     }
 
-    // Render 6 Digest Blocks with Strict Flagging
+    // Render 6 Digest Blocks
     QUESTIONNAIRE_SECTIONS.forEach(sec => {
       const container = document.getElementById(`doc-content-sec-${sec.id}`);
       if (!container) return;
@@ -970,10 +1035,10 @@
         let bodyHtml = '';
 
         if (item.status === 'unresolved') {
-          const note = item.text && item.text.trim() ? escapeHtml(item.text.trim()) : 'Action item flagged.';
+          const note = item.text && item.text.trim() ? escapeHtml(item.text.trim()) : 'Action item flagged — follow up required.';
           bodyHtml = `
             <div class="doc-entry-body">
-              <span class="status-badge badge-unresolved" style="font-size: 0.7rem; margin-bottom: 0.2rem;">[Unresolved Action Item]</span><br>
+              <span class="status-badge badge-unresolved" style="font-size:0.7rem;margin-bottom:0.2rem;">[Unresolved Action Item]</span><br>
               ${note}
             </div>
           `;
@@ -992,13 +1057,12 @@
             </div>
           `;
         } else {
-          // Standard
           if (item.text && item.text.trim().length > 0) {
             bodyHtml = `<div class="doc-entry-body">${escapeHtml(item.text.trim())}</div>`;
           } else {
             bodyHtml = `
               <div class="doc-entry-body">
-                <span class="doc-tag-missing">[Not Provided — Pending Outgoing Officer Input]</span>
+                <span class="doc-tag-missing">[Not Provided — Outgoing Officer Did Not Enter a Response]</span>
               </div>
             `;
           }
@@ -1013,12 +1077,12 @@
     });
   }
 
-  // --- Markdown Export Utility ---
+  // --- Markdown Export ---
   function generateMarkdownSummary() {
     const meta = appState.meta;
     const roleText = meta.officerRole === 'Other' && meta.officerRoleOther ? meta.officerRoleOther : (meta.officerRole || 'Officer');
-    
-    let md = `# UT Arlington Student Organizations — Officer Handoff Summary\n\n`;
+
+    let md = `# MavNext — Officer Handoff Summary\n\n`;
     md += `**Organization:** ${meta.orgName || 'N/A'}\n`;
     md += `**Role:** ${roleText}\n`;
     md += `**Outgoing Officer:** ${meta.outgoingOfficer || 'N/A'}\n`;
@@ -1026,7 +1090,6 @@
     md += `**Last-Reviewed Date:** ${meta.lastReviewedDate || 'N/A'}\n\n`;
     md += `---\n\n`;
 
-    // Unresolved Commitments Callout
     const unresolved = [];
     QUESTIONNAIRE_SECTIONS.forEach(sec => {
       sec.questions.forEach(q => {
@@ -1038,47 +1101,32 @@
     });
 
     if (unresolved.length > 0) {
-      md += `## ⚠️ Unresolved Action Items & Next Steps\n\n`;
+      md += `## ⚠️ Unresolved Action Items\n\n`;
       md += unresolved.join('\n') + `\n\n---\n\n`;
     }
 
-    // 6 Sections
     QUESTIONNAIRE_SECTIONS.forEach(sec => {
       md += `## ${sec.id}. ${sec.heading}\n\n`;
       sec.questions.forEach(q => {
         const item = appState.answers[q.id] || { text: '', status: 'standard' };
         md += `### ${q.title}\n`;
         if (item.status === 'unresolved') {
-          md += `*Status: [UNRESOLVED]* ${item.text || 'Action item'}\n\n`;
+          md += `*[UNRESOLVED]* ${item.text || 'Action item'}\n\n`;
         } else if (item.status === 'unknown') {
-          md += `*Status: [UNKNOWN / RESEARCH NEEDED]* ${item.text || ''}\n\n`;
+          md += `*[UNKNOWN / RESEARCH NEEDED]* ${item.text || ''}\n\n`;
         } else if (item.status === 'na') {
-          md += `*Status: [NOT APPLICABLE]* ${item.text || ''}\n\n`;
+          md += `*[NOT APPLICABLE]* ${item.text || ''}\n\n`;
         } else {
-          if (item.text && item.text.trim().length > 0) {
-            md += `${item.text.trim()}\n\n`;
-          } else {
-            md += `*[Not Provided]*\n\n`;
-          }
+          md += item.text && item.text.trim().length > 0 ? `${item.text.trim()}\n\n` : `*[Not Provided]*\n\n`;
         }
       });
     });
 
-    md += `---\n*Generated client-side via UT Arlington Officer Handoff Tool.*\n`;
+    md += `---\n*Generated with MavNext — an independent student-developed handoff tool. Not an official UTA service.*\n`;
     return md;
   }
 
-  // --- Load Synthetic Demo Data ---
-  function loadSyntheticDemo() {
-    appState = JSON.parse(JSON.stringify(SYNTHETIC_DEMO_DATA));
-    syncMetaFormFromState();
-    syncAllQuestionCardsFromState();
-    saveToLocalStorage();
-    showToast('Loaded demonstration sample data (UTA Maverick Robotics Society).');
-    navigateToScreen('review');
-  }
-
-  // --- Toast Feedback Helper ---
+  // --- Toast Feedback ---
   let toastTimer = null;
   function showToast(message) {
     if (!elements.toast) return;
@@ -1090,7 +1138,7 @@
     }, 3800);
   }
 
-  // --- HTML Escaping Helper ---
+  // --- HTML Escaping ---
   function escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -1101,104 +1149,7 @@
       .replace(/'/g, '&#039;');
   }
 
-  // --- Event Listeners Attachment ---
-  function attachEventListeners() {
-    // Start Handoff button on Welcome screen
-    elements.btnStartHandoff.addEventListener('click', () => {
-      if (validateWelcomeForm()) {
-        navigateToScreen('1');
-      }
-    });
-
-    // Sample data buttons
-    elements.btnWelcomeSample.addEventListener('click', loadSyntheticDemo);
-    elements.btnLoadSample.addEventListener('click', loadSyntheticDemo);
-
-    // Clear answers triggers
-    elements.btnClearData.addEventListener('click', openClearModal);
-    elements.btnModalClearCancel.addEventListener('click', closeClearModal);
-    elements.btnModalClearConfirm.addEventListener('click', executeClearAllData);
-
-    // Modal background close on click outside
-    elements.modalClearConfirm.addEventListener('click', (e) => {
-      if (e.target === elements.modalClearConfirm) {
-        closeClearModal();
-      }
-    });
-
-    // Stepper navigation clicks
-    document.querySelectorAll('.step-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.getAttribute('data-target');
-        if (target !== 'welcome' && !validateWelcomeForm()) {
-          return;
-        }
-        navigateToScreen(target);
-      });
-    });
-
-    // Previous and Next buttons inside question sections
-    document.querySelectorAll('.nav-prev').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.getAttribute('data-target');
-        navigateToScreen(target);
-      });
-    });
-
-    document.querySelectorAll('.nav-next').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const target = btn.getAttribute('data-target');
-        navigateToScreen(target);
-      });
-    });
-
-    // Review to Summary transition
-    elements.btnGenerateSummary.addEventListener('click', () => {
-      navigateToScreen('summary');
-    });
-
-    // Summary screen toolbar actions
-    elements.btnSummaryToReview.addEventListener('click', () => {
-      navigateToScreen('review');
-    });
-
-    elements.btnSummaryToEdit.addEventListener('click', () => {
-      navigateToScreen('1');
-    });
-
-    elements.btnPrintSummary.addEventListener('click', () => {
-      window.print();
-    });
-
-    elements.btnCopyMarkdown.addEventListener('click', () => {
-      const md = generateMarkdownSummary();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(md).then(() => {
-          showToast('Summary copied to clipboard in markdown format.');
-        }).catch(() => {
-          fallbackCopyText(md);
-        });
-      } else {
-        fallbackCopyText(md);
-      }
-    });
-
-    // Footer restart link
-    if (elements.footerRestart) {
-      elements.footerRestart.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigateToScreen('welcome');
-      });
-    }
-
-    // Keyboard Esc shortcut to close modal
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !elements.modalClearConfirm.classList.contains('hidden')) {
-        closeClearModal();
-      }
-    });
-  }
-
+  // --- Clipboard Fallback ---
   function fallbackCopyText(text) {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -1210,9 +1161,115 @@
       document.execCommand('copy');
       showToast('Summary copied to clipboard.');
     } catch (err) {
-      showToast('Could not copy text automatically. Please use browser print.');
+      showToast('Could not copy automatically. Use Print / Save PDF instead.');
     }
     document.body.removeChild(ta);
+  }
+
+  // --- Event Listeners ---
+  function attachEventListeners() {
+    // Start Handoff
+    elements.btnStartHandoff.addEventListener('click', () => {
+      if (validateWelcomeForm()) {
+        navigateToScreen('1');
+      }
+    });
+
+    // Resume handoff (loads saved draft, then goes to Section 1)
+    if (elements.btnResumeHandoff) {
+      elements.btnResumeHandoff.addEventListener('click', () => {
+        if (validateWelcomeForm()) {
+          navigateToScreen('1');
+        }
+      });
+    }
+
+    // Start fresh (clear draft, stay on welcome)
+    if (elements.btnStartFresh) {
+      elements.btnStartFresh.addEventListener('click', () => {
+        openClearModal();
+      });
+    }
+
+    // Sample data buttons — both trigger the same confirm-then-load flow
+    elements.btnWelcomeSample.addEventListener('click', requestLoadDemo);
+    elements.btnLoadSample.addEventListener('click', requestLoadDemo);
+
+    // Demo overwrite modal
+    elements.btnModalDemoCancel.addEventListener('click', () => {
+      elements.modalDemoConfirm.classList.add('hidden');
+    });
+    elements.btnModalDemoConfirm.addEventListener('click', () => {
+      elements.modalDemoConfirm.classList.add('hidden');
+      loadSyntheticDemo();
+    });
+    elements.modalDemoConfirm.addEventListener('click', (e) => {
+      if (e.target === elements.modalDemoConfirm) {
+        elements.modalDemoConfirm.classList.add('hidden');
+      }
+    });
+
+    // Clear answers
+    elements.btnClearData.addEventListener('click', openClearModal);
+    elements.btnModalClearCancel.addEventListener('click', closeClearModal);
+    elements.btnModalClearConfirm.addEventListener('click', executeClearAllData);
+    elements.modalClearConfirm.addEventListener('click', (e) => {
+      if (e.target === elements.modalClearConfirm) closeClearModal();
+    });
+
+    // Stepper navigation
+    document.querySelectorAll('.step-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-target');
+        if (target !== 'welcome' && !validateWelcomeForm()) return;
+        navigateToScreen(target);
+      });
+    });
+
+    // Prev/Next buttons inside sections
+    document.querySelectorAll('.nav-prev').forEach(btn => {
+      btn.addEventListener('click', () => navigateToScreen(btn.getAttribute('data-target')));
+    });
+    document.querySelectorAll('.nav-next').forEach(btn => {
+      btn.addEventListener('click', () => navigateToScreen(btn.getAttribute('data-target')));
+    });
+
+    // Review → Summary
+    elements.btnGenerateSummary.addEventListener('click', () => navigateToScreen('summary'));
+
+    // Summary actions
+    elements.btnSummaryToReview.addEventListener('click', () => navigateToScreen('review'));
+    elements.btnSummaryToEdit.addEventListener('click', () => navigateToScreen('1'));
+    elements.btnPrintSummary.addEventListener('click', () => window.print());
+
+    elements.btnCopyMarkdown.addEventListener('click', () => {
+      const md = generateMarkdownSummary();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(md).then(() => {
+          showToast('Summary copied to clipboard.');
+        }).catch(() => fallbackCopyText(md));
+      } else {
+        fallbackCopyText(md);
+      }
+    });
+
+    // Footer restart
+    if (elements.footerRestart) {
+      elements.footerRestart.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateToScreen('welcome');
+      });
+    }
+
+    // Keyboard: Escape closes any open modal
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (!elements.modalClearConfirm.classList.contains('hidden')) closeClearModal();
+        if (!elements.modalDemoConfirm.classList.contains('hidden')) {
+          elements.modalDemoConfirm.classList.add('hidden');
+        }
+      }
+    });
   }
 
   // --- Initialization ---
@@ -1224,10 +1281,10 @@
     loadFromLocalStorage();
     syncMetaFormFromState();
     syncAllQuestionCardsFromState();
+    updateResumeBanner();
     navigateToScreen('welcome');
   }
 
-  // Run on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

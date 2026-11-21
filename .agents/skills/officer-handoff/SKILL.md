@@ -1,130 +1,103 @@
 ---
-name: officer-handoff
+name: mavnext-quality
 description: >-
-  Standard development rules, architectural constraints, and handoff workflow guidelines
-  for the Officer Handoff Tool for UT Arlington student organizations. Future agents
-  MUST read and apply this skill before every build iteration.
+  Product purpose, architecture, data-safety, permission, branding, accessibility,
+  GitHub Pages, and evidence standards for MavNext — a leadership workspace that helps
+  student organization officers run their term and hand off each role. Every agent
+  working on this repository MUST read this skill before changing anything.
 ---
 
-# Officer Handoff Tool — Development Skill & Guidelines
+# MavNext — Development Skill & Quality Guidelines
 
-This skill defines the mandatory architectural, functional, security, and UI standards for the **Officer Handoff Tool**, designed specifically for outgoing and incoming student organization officers at the **University of Texas at Arlington (UTA)**.
-
-> [!IMPORTANT]
-> **Mandatory Agent Pre-Execution Requirement:**
-> Every future agent working on this repository **must read and strictly enforce this skill** before beginning any build, modification, or code iteration. No deviation from the constraints below is permitted.
-
----
-
-## 1. Core Principles & Strict Constraints
-
-All development iterations must adhere to the following 11 core rules:
-
-1. **Pure Front-End Tech Stack**:
-   - Build using only **HTML5, CSS3, and vanilla JavaScript**.
-   - Must run natively in modern web browsers and be 100% compatible with **GitHub Pages** (root or `/docs` static deployment).
-2. **Target Purpose**:
-   - Deliver a purpose-built application that helps outgoing student organization officers prepare a comprehensive, structured handoff summary for incoming officers.
-3. **Six Required Questionnaire Sections**:
-   - The questionnaire must include all six specific sections detailed in [Section 3](#3-the-six-questionnaire-sections).
-4. **Strict Truthfulness & Flagging (Anti-Hallucination)**:
-   - Clearly flag missing, unknown, and unresolved fields.
-   - Never invent, assume, or auto-complete unprovided handoff details.
-5. **One-Page Handoff Summary**:
-   - Generate a clean, readable one-page summary view featuring a **Last-Reviewed Date** and a dedicated **Unresolved Next Steps** section.
-6. **Print & PDF Exportability**:
-   - Native support for printing or exporting to PDF via browser print functionality (`window.print()`), with robust `@media print` styling ensuring proper pagination and page-break management.
-7. **Client-Side-Only Persistence**:
-   - Store answers **only in the user's browser** (e.g., `localStorage`).
-   - Provide an easily accessible **"Clear My Answers"** button (with confirmation) that completely wipes stored local data.
-8. **Strict Security & Privacy Boundary**:
-   - **Never request, accept, or store passwords, MFA/recovery codes, private contact details, or confidential financial information** (such as bank account numbers or SSNs).
-   - Only document procedural steps (e.g., "Transfer admin role on MavOrgs", "Transfer ownership of Google Drive").
-9. **Synthetic Demonstration Data Only**:
-   - Any pre-filled presets, demo loaders, or placeholder examples must use **100% synthetic, fictional demonstration data** (e.g., fictional club names like "UTA Maverick Robotics Society").
-10. **Accessibility & Responsive Design**:
-    - Mobile-friendly, responsive layout.
-    - Accessible semantic HTML, proper contrast, keyboard navigation, explicit form labels, and clear inline validation/error messages.
-11. **No Backend or External Tooling Dependencies**:
-    - **No backend servers** (Node.js/Express, Python/Flask, etc.).
-    - **No build tools or bundlers** (npm, Vite, Webpack, Parcel, Babel, etc.).
-    - **No API keys or paid external APIs**.
+> **Revision history**
+> - v1 (2026-11-20): Renamed from `officer-handoff`. MavNext name and brass/ivory palette; resume banner, demo-overwrite confirmation, character counters, aria states, pilot documentation.
+> - v2 (2026-11-20): Product expanded from one anonymous form to an organization workspace (meetings, tasks, handoffs, members, archive). The rule against a backend is **replaced**: shared accounts use Supabase with row-level security, off until configured. Blue/orange palette restored per the owner's brief. Storage split into isolated keys; the v1 draft key is read-only. Lessons from verification recorded in §12.
 
 ---
 
-## 2. Architecture & File Layout
+## 1. Product identity
 
-When building the application, maintain a clean, zero-build static structure:
+- **Name:** MavNext. Exact capitalization.
+- **What it is:** a workspace connecting organization → meetings and tasks → role handoff → incoming review → archive. The six-section handoff is the core feature.
+- **Status:** independent student-developed pilot. Not an official UTA service; no endorsement, seal, mascot, or official-integration language. Keep the pilot notice discreet (sidebar footer, entry page, Settings), not inside the workflow.
+- **Logo:** `assets/mavnext-logo.png` (original, transparent). `mavnext-logo-trimmed.png` and `mavnext-mark.png` are lossless crops. Never redraw, recolor, or stretch it; set only height or only width.
 
-```text
-/
-├── index.html         # Single-page application entry point & semantic layout
-├── css/
-│   └── styles.css     # Responsive design, accessibility styles, and @media print rules
-├── js/
-│   └── app.js         # State management, local persistence, validation, and print handlers
-└── README.md          # Project overview & GitHub Pages usage instructions
-```
+## 2. Architecture (keep)
 
-- Keep code modular and readable without build steps.
-- Avoid external CSS/JS libraries unless lightweight and loaded via standard reliable CDNs without requiring build tools or API tokens.
+- Plain HTML/CSS/JS, **no build step**, classic `<script>` tags (must open from `file://`), relative paths, hash routing (`#/…`) for GitHub Pages subpaths.
+- Layers: `store.js` (adapters, session, migration) → `svc.js` (every write; permission checked) → views. Views never mutate records or touch `localStorage` directly.
+- Shared components live in `ui.js` (dialog, confirm, badges, empty states, page header). Reuse them.
+- Icons: the local outline set in `icons.js` only. No emoji navigation.
 
----
+## 3. Storage and data safety
 
-## 3. The Six Questionnaire Sections
+| Key | Owner | Rule |
+|---|---|---|
+| `mavnext.demo.v1` | Demo | Reset only via Settings → Reset demo |
+| `mavnext.local.v1` | This-device workspace | Deleted only via Settings with confirmation |
+| `mavnext.session.v1` | Active mode/org | — |
+| `uta_officer_handoff_data` | v1 draft | **Read-only. Never write or remove.** Import copies only. |
 
-The application must organize questions into these six distinct categories:
+- Never call `localStorage.clear()`. Destructive actions are scoped (Delete this draft, Cancel this meeting, Reset demo), confirmed, and say exactly what is and is not removed.
+- `handoffVersions`, `handoffReviews`, and `activity` are append-only (enforced in `Store.put` and in SQL).
+- Handoff status is **derived** from versions and reviews; never store an editable status.
 
-| Section # | Section Title | Focus & Expected Questions |
-| :--- | :--- | :--- |
-| **1** | **Responsibilities** | Role mission, core officer duties, recurring weekly/monthly routines, key campus relationships, and expectations. |
-| **2** | **Account-Access Transfer Steps** | Step-by-step procedures to transfer ownership for organizational tools (MavOrgs, Google Workspace, Canvas, social media, Discord/Slack). *Reminder: Procedural transfer guidance only—never passwords.* |
-| **3** | **Recurring Deadlines** | Annual and semester timeline milestones: student org re-registration, semester activity fair dates, room reservation cutoffs, election windows. |
-| **4** | **Funding Procedures** | Student Government allocation guidelines, UTA Activity Fee processes, bank signee transitions, reimbursement workflows, and invoice handling. |
-| **5** | **Event Lessons** | Retrospective insights on major past events: what succeeded, common pitfalls, preferred campus venues, catering tips, and attendance patterns. |
-| **6** | **Unfinished Commitments** | Pending vendor contracts, open invoices, ongoing university inquiries, and unfinished initiatives handed off to the incoming team. |
+## 4. Accounts and permissions
 
----
+- Permission roles (`admin`, `officer`, `incoming`) are separate from officer titles.
+- UI checks (`MN.can`) only decide what to show. Shared data is protected by `supabase/schema.sql`; change both together.
+- Never: localStorage passwords, a shared club password, collecting passwords in an unfinished flow, or service-role keys/secrets in frontend code.
+- The demo role switch is labeled "simulated, not a sign-in" and exists only in demo mode.
+- Submitting or acknowledging a handoff never changes permissions. The last admin cannot be removed or demoted.
+- Do not say "Invitation sent" or "delivered" unless a real service confirmed it. Today: demo = simulated; Supabase = a link the admin shares.
 
-## 4. Summary Generation & Print/PDF Specification
+## 5. Handoff content rules
 
-### Required Elements in the Summary View
-1. **Organization & Role Header**: Org Name, Officer Position, Outgoing Officer Name (synthetic/optional), and Incoming Officer Name.
-2. **Last-Reviewed Date**: Timestamp dynamically captured or explicitly set by the officer.
-3. **Structured Review Blocks**: Concise digest of answers from each of the 6 sections.
-4. **Unresolved Next Steps Banner**: High-visibility block grouping all questions flagged as *Incomplete*, *Pending*, or *Unresolved*, with designated checkboxes or action prompts for the incoming officer.
+- The six sections and question ids in `sections.js` are stable (migration depends on them).
+- Answering is the default; Unknown / Not applicable / Needs follow-up are compact secondary marks.
+- Required questions must be answered or explicitly marked before submit. Never invent or auto-complete answers. Blank shows `[Not provided]`.
+- Access sections describe procedures. Keep the privacy warning and the credential-pattern warning.
+- Include tasks/meeting notes only when the user selects them; show them in review.
+- Print/export the full record. Never truncate to fit one page.
 
-### Print & PDF Export Rules
-- Implement dedicated `@media print` CSS:
-  - Hide navigation bars, interactive form controls, edit buttons, and the "Clear My Answers" button.
-  - Reset backgrounds to clean white with high-contrast text for monochrome and color printing.
-  - Enforce page break controls (`page-break-inside: avoid;`, `break-inside: avoid;`) to prevent awkward splits across sections.
-  - Ensure the summary fits cleanly into an easily readable format suitable for physical printing or browser "Save as PDF".
+## 6. Visual system
 
----
+Primary `#0064B1`, navy text `#142638`, orange accent `#F58025` (**never for text**; logo + active-nav marker), page `#F6F8FB`, panels `#FFFFFF`, muted `#526176`, borders `#DCE3EC`. One sans family (Inter → system). Titles ~28px, section headings 17–20px, body 14–16px, meta 12–14px. Sidebar 240px, topbar 64px, 8px spacing, 8–12px radii, thin borders, minimal shadow. No gradients, glass, decorative charts, or dead controls.
 
-## 5. Privacy, Safety, and Local Data Protocol
+## 7. Honest copy
 
-- **Prohibited Data**:
-  - Form validation and input placeholders must explicitly warn: *"Do NOT enter passwords, PINs, bank account numbers, or private personal phone numbers."*
-- **Local Storage Schema**:
-  - Key names should be namespaced (e.g., `uta_officer_handoff_data`).
-  - Loading logic must gracefully handle empty, corrupted, or older schema data.
-- **Data Erasure**:
-  - The **Clear My Answers** control must present a clear confirmation dialog (`confirm` or modal) before purging `localStorage` and resetting form inputs to prevent accidental loss.
+- Privacy text must match the active mode (local-only vs transmitted to the configured service).
+- Never claim real login, shared storage, invitations, or delivery works until verified against a configured project.
 
----
+## 8. Accessibility checklist
 
-## 6. Pre-Build & Iteration Checklist for Agents
+- Labels on all controls; skip link; `aria-current` on nav/steps; `aria-pressed` / `aria-selected` render as `"true"` / `"false"`.
+- Dialogs: `role="dialog"`, `aria-modal`, focus trap, Escape closes, focus returns, background `inert`.
+- Mobile ≤860px: sidebar becomes a drawer (Escape closes, focus managed). No horizontal overflow at 375px.
+- Focus moves to the page title on navigation, but **not** on first load.
 
-Before completing any development iteration on the website, verify each item:
+## 9. Verification standard
 
-- [ ] Does the site run directly in the browser by opening `index.html` without running a build command (`npm run build`, etc.)?
-- [ ] Are all 6 sections present and intuitive to navigate?
-- [ ] Are missing and unresolved fields flagged visibly in the summary rather than filled with assumed values?
-- [ ] Does the summary display the "Last-Reviewed Date" and "Unresolved Next Steps"?
-- [ ] Does the print stylesheet cleanly format the summary for print/PDF export?
-- [ ] Does "Clear My Answers" purge local storage and reset the UI safely?
-- [ ] Are there zero requests for sensitive credentials (passwords, PINs, private data)?
-- [ ] Is any sample/demo data completely synthetic?
-- [ ] Is the design responsive, accessible, and free of external backend dependencies?
+- Run the app and inspect real screenshots at desktop and 375px. Run the Playwright workflow checks (demo isolation, meeting → dashboard, linked task, autosave + refresh, submit + snapshot, incoming acknowledgment, review counts, long content print, mobile/keyboard, reset isolation).
+- For SQL changes, run the policy tests against PostgreSQL with stand-in `auth.uid()` / `auth.jwt()`, and say clearly that this is not Supabase.
+- Record actual results only. Mark anything unverified as unverified. Never invent user feedback, screenshots, or history.
+
+## 10. GitHub Pages checklist
+
+- [ ] Relative paths only; `index.html` at root; lowercase filenames.
+- [ ] Deep link + refresh works under `/<repo>/`.
+- [ ] Opens from `file://` without console errors.
+
+## 11. Agents must never
+
+- Commit, push, merge, reset, or publish (the team lead uses GitHub Desktop).
+- Overwrite teammates' work or drafts without a preserved copy.
+- Add analytics, external AI APIs, or any endpoint besides the configured Supabase project.
+- Log user answers to the console.
+
+## 12. Lessons learned (Iteration 3)
+
+- A template helper that drops `true`/`false` silently breaks ARIA state attributes. Render booleans as strings and use ternaries for conditional markup.
+- `position:absolute` screen-reader text inside an `overflow:auto` table wrapper escapes it unless the wrapper is positioned.
+- In RLS subqueries, unqualified column names resolve to the *inner* table. `h.org_id = org_id` compares a column to itself. Always qualify with the policy's table name.
+- Playwright `check()` on an element that re-renders after `change` times out. Click it, then assert the stored state.
