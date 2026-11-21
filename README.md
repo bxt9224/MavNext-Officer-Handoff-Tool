@@ -1,94 +1,89 @@
-# Officer Handoff Tool
+# MavNext
 
-**A structured leadership transition web application for student organizations at the University of Texas at Arlington (UTA).**
+**A leadership workspace for student organization officers.**
 
-Built with pure front-end web technologies (HTML5, CSS3, vanilla JavaScript) designed to deploy directly on **GitHub Pages** with zero build configuration, zero backend dependencies, and zero collection of sensitive credentials.
+MavNext helps officers organize their current term and pass each role to the next officer:
 
----
+Organization workspace → meetings and tasks → role-specific handoff → incoming officer review → archived term.
 
-## 🌟 Purpose
-
-Transitioning executive leadership in student organizations is often disorganized, leading to lost institutional knowledge, delayed university compliance, and fragmented account access. 
-
-The **Officer Handoff Tool** guides outgoing officers through a six-step structured questionnaire and generates a clean, readable, one-page handoff quick-start summary with designated print-friendly CSS for immediate physical printing or PDF export.
+> An independent student-developed pilot. Not an official UTA service and not endorsed by the university.
 
 ---
 
-## 🚀 Key Features
+## What it does
 
-1. **Welcome & Identity Setup**:
-   - Executive and committee officer role selection (President, Vice President, Treasurer, Secretary, Event Coordinator, or custom role).
-   - Prominent **Privacy & Security Warning** reminding officers to never record passwords, PINs, recovery codes, or sensitive banking details.
-2. **6-Section Structured Questionnaire**:
-   - **Section 1: Responsibilities** — Role mission, core duties, weekly routines, key campus relationships, and success advice.
-   - **Section 2: Account Access Transfer** — Step-by-step procedural guides for transferring administrative ownership on MavOrgs, Google Drive, Discord, Slack, and social media.
-   - **Section 3: Recurring Deadlines** — Key timeline milestones: annual re-registration, Maverick Stampede activity fairs, room reservation lead times, and elections.
-   - **Section 4: Funding Procedures** — Factual, free-text explanation of Student Government funding, off-campus bank signee transitions, reimbursements, and invoice handling.
-   - **Section 5: Event Lessons** — Retrospective on signature events, preferred campus venues (University Center, Woolf Hall, etc.), catering rules, and student promotion.
-   - **Section 6: Unfinished Commitments** — Outstanding vendor orders, open university approvals, ongoing initiatives, and top 3 immediate next steps for the first 14 days.
-3. **Response Status Controls & Anti-Hallucination**:
-   - Explicit controls on every question to mark items as **Standard Response**, **Mark as Unknown**, **Not Applicable (N/A)**, or **Flag as Unresolved Action Item**.
-   - Missing or blank items are visibly tagged as `[Not Provided]` rather than inventing or assuming unprovided information.
-4. **Audit & Review Screen**:
-   - Metrics grid breaking down Answered, Unfinished, Unknown, Not Applicable, and Blank items.
-   - Section-by-section breakdown with direct "Edit" shortcuts.
-5. **Print-Ready One-Page Summary**:
-   - Formatted institutional document header with UTA branding, outgoing/incoming officer credentials, and last-reviewed date.
-   - High-visibility **Priority Action Items & Unresolved Next Steps** banner with actionable check-boxes.
-   - 6-section digest grid with signature sign-off lines.
-   - Built-in `@media print` rules for browser **Print / Save as PDF** (`window.print()`).
-6. **Local Browser Persistence & Privacy**:
-   - All data auto-saves securely to the user's browser `localStorage` (`uta_officer_handoff_data`).
-   - Dedicated **"Clear My Answers"** button with a confirmation safety dialog.
-   - **Load Demo Data** option featuring a synthetic, fictional student org (*UTA Maverick Robotics Society*) with zero real credentials.
+| Area | What you can do |
+|---|---|
+| **Overview** | Current term, upcoming meetings, your tasks, handoff progress, and recent activity. Every number comes from stored records. |
+| **Meetings & Events** | Create and edit meetings or events (date, time, time zone, location), add agenda items and notes, choose attendees, add action items. |
+| **Tasks** | Title, description, assignee, due date, status (To do / In progress / Done), and an optional link to a meeting or handoff. Filter by My tasks, All, Open, and Completed. A meeting's action items are the same task records, not copies. |
+| **Handoffs** | The six-section handoff (Responsibilities, Account access procedures, Recurring deadlines, Funding procedures, Lessons learned, Open commitments). Answers autosave. Any answer can be marked Unknown, Not applicable, or Needs follow-up. You choose which tasks and meeting notes to include. A pre-submit review lists missing required items and unresolved answers. Each submission is a dated, read-only version. |
+| **Incoming review** | The incoming officer opens the submitted version and either acknowledges receipt or requests clarification. The outgoing officer can then submit a new version; earlier versions stay readable. |
+| **Members & Roles** | Officer titles, permission roles (Administrator / Officer / Incoming officer), and term dates. The last administrator cannot be removed or demoted. |
+| **Archive** | Submitted handoffs grouped by term and role, with every version. |
+| **Print / export** | "Print / Save PDF" prints the full record (never truncated). "Download text" saves a Markdown copy. |
 
----
+Screenshots of the actual build are in [`docs/screenshots/`](docs/screenshots/).
 
-## 🛠️ Technology Stack
+## Three ways to use it
 
-- **HTML5**: Semantic, accessible markup with ARIA roles and labels.
-- **CSS3**: Responsive flexbox and grid layouts, CSS custom properties, UTA-inspired color palette (`#0064B1` UTA Blue, `#0B2341` Deep Navy, `#F58025` Maverick Orange), and print stylesheet.
-- **Vanilla JavaScript (ES6+)**: Zero dependencies, zero build step, modular event-driven architecture with client-side state persistence.
+1. **Explore demo:** a fictional club (Riverside Robotics Society) with board members, meetings, tasks, a partly finished President handoff, and an archived Treasurer handoff. Use **View as** in the yellow demo bar to switch between the simulated people, including the incoming officer. Demo data lives under its own browser key and never touches other records. Reset it from **Settings → Reset demo workspace**.
+2. **Use on this device without an account:** a private workspace stored only in this browser. Nothing is shared, and other officers cannot receive handoffs. Use Print or Export to share. If a draft from the earlier version of MavNext exists, you can import a copy; the original is never modified.
+3. **Sign in / Create account:** individual accounts with organization memberships, using Supabase. **Not active until the project owner configures it.** See [`docs/backend-setup.md`](docs/backend-setup.md). Until then these screens say accounts are unavailable and collect nothing.
 
----
+## Running locally
 
-## 💻 How to Preview and Test Locally
+No build step and no install.
 
-Because this application uses standard static HTML/CSS/JS without bundlers or server-side runtimes, you can test it locally in several ways:
+- Double-click `index.html`, **or**
+- `python -m http.server 8000`, then open <http://localhost:8000>.
 
-### Option A: Open directly in any Web Browser
-Double-click `index.html` or drag and drop it into any modern web browser (Google Chrome, Firefox, Safari, Edge).
+## Deploying to GitHub Pages
 
-### Option B: Local Python HTTP Server (Recommended)
-Open your terminal in the repository directory and run:
+Settings → Pages → Deploy from a branch → `main` / `(root)`. All paths are relative and routing uses `#/…` hashes, so refresh and deep links work under `https://<user>.github.io/<repo>/`.
 
-```bash
-# Python 3
-python3 -m http.server 8000
+## Storage and privacy
+
+| Mode | Where records live | Sent anywhere? |
+|---|---|---|
+| Demo | `localStorage` key `mavnext.demo.v1` | No |
+| This device | `localStorage` key `mavnext.local.v1` | No |
+| Signed in (once configured) | The configured Supabase project | **Yes**, to that service, and visible to organization members according to their permissions |
+
+- The earlier version's draft (`uta_officer_handoff_data`) is read but never changed or deleted.
+- MavNext never calls `localStorage.clear()`. Each destructive action is scoped, confirmed, and explains what it removes.
+- **Never enter** passwords, PINs, recovery codes, private financial records, or account numbers. The access section asks for transfer *procedures* only, and the editor warns when text looks like a credential.
+
+## Project structure
+
+```
+index.html              app entry (plain scripts, works from file://)
+style.css               design system and layout
+assets/                 MavNext logo (original + losslessly trimmed copies)
+js/config.js            Supabase URL + anon key (empty = accounts off)
+js/util.js, icons.js    helpers, local outline icons
+js/sections.js          the six handoff sections and answer analysis
+js/store.js             storage adapters, session, v1 draft migration
+js/permissions.js       permission model + derived handoff status
+js/svc.js               all write operations (permission-checked)
+js/fixtures.js          demo data (fictional)
+js/remote.js            Supabase adapter (unverified until configured)
+js/ui.js                shared components: dialog, confirm, badges, empty states
+js/app.js               shell, routing, entry screens
+js/views-*.js           pages
+supabase/schema.sql     tables, row-level security, invitation + org RPCs
+legacy/v1/              the previous single-form app, kept for reference
+tests/                  Playwright workflow tests, PostgreSQL policy tests
+docs/                   tests, build log, setup, demo guide
 ```
 
-Then navigate to:
-```
-http://localhost:8000
-```
+## Known limitations
 
-### Option C: VS Code / IDE Live Server
-If using Visual Studio Code or an IDE extension like **Live Server**, right-click `index.html` and select **"Open with Live Server"**.
+- Shared accounts, invitations, and cross-device sync are **not verified**: no Supabase project has been configured. The database policies were tested against local PostgreSQL 16 with stand-in auth functions (see `docs/functional-tests.md`), not against Supabase itself.
+- MavNext sends no email. With accounts configured, admins get an invitation **link** to share themselves.
+- No calendar views or notifications.
+- No formal assistive-technology audit; keyboard and focus behaviour were tested in automated Chromium only.
 
----
+## Course
 
-## 🌐 Deploying to GitHub Pages
-
-1. Commit and push the repository to GitHub.
-2. In your GitHub repository, navigate to **Settings** > **Pages**.
-3. Under **Build and deployment**:
-   - **Source**: Select `Deploy from a branch`.
-   - **Branch**: Select `main` (or `master`), and folder `/ (root)`.
-4. Click **Save**. Within 1–2 minutes, your website will be live at:
-   `https://<your-username>.github.io/<repository-name>/`
-
----
-
-## 🔒 Security & Privacy Notice
-
-This tool is strictly client-side. It does not communicate with any external backend API, database, or analytics tracker. Outgoing officers must only document official procedural delegation processes and must **never** record passwords, MFA recovery codes, or personal financial details.
+Built for **INSY 3331** at the University of Texas at Arlington.
