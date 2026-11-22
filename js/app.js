@@ -54,6 +54,12 @@
       case 'signup': return { view: 'signup' };
       case 'local-setup': return { view: 'localSetup' };
       case 'invite': return { view: 'invite', id: b };
+      case 'check-email': return { view: 'checkEmail' };
+      case 'forgot': return { view: 'forgot' };
+      case 'privacy': return { view: 'privacy' };
+      case 'reset-password': return { view: 'resetPassword' };
+      case 'profile-setup': return { view: 'profileSetup' };
+      case 'welcome': return { view: 'welcome' };
       case 'overview': return { view: 'overview', nav: 'overview' };
       case 'meetings':
         if (b === 'new') return { view: 'meetingForm', nav: 'meetings' };
@@ -73,7 +79,9 @@
       default: return { view: 'notFound' };
     }
   }
-  const PUBLIC_VIEWS = ['entry', 'signin', 'signup', 'localSetup', 'invite'];
+  const PUBLIC_VIEWS = ['entry', 'signin', 'signup', 'localSetup', 'invite', 'checkEmail', 'forgot', 'privacy'];
+  // Full-page views that need a signed-in account but no organization.
+  const BARE_VIEWS = ['welcome', 'profileSetup', 'resetPassword'];
 
   // ---------- Opening workspaces ----------
   MN.openDemo = function () {
@@ -156,8 +164,8 @@
                 </button>
                 <div class="menu" id="profile-menu" hidden>
                   <div class="menu-head"><strong>${c.me ? c.me.name : ''}</strong><br><span class="muted">${(c.user && c.user.email) || (c.mode === 'local' ? 'No account — this browser only' : '')}</span><br><span class="muted">${permLabel} · ${c.org.name}</span></div>
-                  <a class="menu-item" href="#/settings">${icon('settings')}Settings</a>
-                  ${c.mode === 'remote' ? html`<button type="button" class="menu-item" data-action="signOut">${icon('logout')}Sign out</button>` : ''}
+                  <a class="menu-item" href="#/settings">${icon('settings')}${c.mode === 'remote' ? 'Settings, account & security' : 'Settings'}</a>
+                  ${c.mode === 'remote' ? html`<a class="menu-item" href="#/welcome">${icon('userPlus')}Join or create an organization</a><button type="button" class="menu-item" data-action="signOut">${icon('logout')}Sign out</button>` : ''}
                   ${c.mode === 'demo' ? html`<button type="button" class="menu-item" data-action="leave">${icon('logout')}Exit demo</button>` : ''}
                   ${c.mode === 'local' ? html`<button type="button" class="menu-item" data-action="leave">${icon('logout')}Close workspace</button>` : ''}
                 </div>
@@ -193,13 +201,22 @@
       return;
     }
     if (MN.Store.ws && target.view === 'entry') { history.replaceState(null, '', '#/overview'); return MN.render({ nav: true, initial: opts && opts.initial }); }
+    if (MN.Store.mode === 'remote') {
+      const redirect = (h) => { history.replaceState(null, '', h); return MN.render({ nav: true, initial: opts && opts.initial }); };
+      if (MN.Remote.inRecovery() && target.view !== 'resetPassword') return redirect('#/reset-password');
+      if (!MN.Remote.inRecovery() && !MN.Remote.profile() && !['profileSetup', 'privacy'].includes(target.view)) return redirect('#/profile-setup');
+      if (['signin', 'signup', 'checkEmail', 'forgot'].includes(target.view)) return redirect('#/overview');
+      if (!PUBLIC_VIEWS.includes(target.view) && !BARE_VIEWS.includes(target.view) && !MN.ctx().org) return redirect('#/welcome');
+    } else if (BARE_VIEWS.includes(target.view)) { history.replaceState(null, '', '#/'); return MN.render({ nav: true }); }
 
+    // Let the previous page clean up (e.g. the landing page's scroll animations) before switching.
+    if (MN.onLeave) { const leave = MN.onLeave; MN.onLeave = null; try { leave(); } catch (e) { console.error(e); } }
     const params = Object.assign({}, target, { q: r.q });
     const view = MN.views[target.view] || MN.views.notFound;
     const scrollY = window.scrollY;
 
-    if (PUBLIC_VIEWS.includes(target.view)) {
-      app.innerHTML = String(view.render(params));
+    if (PUBLIC_VIEWS.includes(target.view) || BARE_VIEWS.includes(target.view)) {
+      app.innerHTML = String(view.render(params, MN.Store.ws ? MN.ctx() : null));
       document.title = `${view.title || 'MavNext'} · MavNext`;
     } else {
       const c = MN.ctx();
@@ -253,7 +270,7 @@
     const body = mode === 'demo' ? html`<p>You will return to the start screen. The demo workspace stays in this browser until you reset it.</p>` : html`<p>You will return to the start screen. This browser-only workspace is not deleted; open it again with "Use on this device".</p>`;
     MN.confirm({ title: mode === 'demo' ? 'Exit demo?' : 'Close workspace?', body, confirmLabel: mode === 'demo' ? 'Exit demo' : 'Close workspace' }).then((ok) => { if (ok) MN.leaveWorkspace(); });
   };
-  MN.actions.signOut = () => { MN.Remote.signOut().then(() => MN.leaveWorkspace(), () => MN.toast('Sign-out failed. Check your connection and try again.')); };
+  MN.actions.signOut = () => { MN.Remote.signOut().then(() => { MN.Store.close(); MN.Session.end(); MN.go('#/signin'); MN.toast('Signed out.'); }, () => MN.toast('Sign-out failed. Check your connection and try again.')); };
   MN.changes.switchOrg = (el) => { MN.Session.patch({ orgId: el.value }); MN.go('#/overview'); };
   MN.changes.demoSwitch = (el) => {
     const ws = MN.Store.ws;
@@ -313,37 +330,9 @@
   MN.Store.subscribe((kind) => { if (kind === 'change') MN.render(); });
 
   // ---------- Entry screens ----------
-  const brandPanel = () => html`
-    <section class="entry-brand" aria-label="About MavNext">
-      <img src="assets/mavnext-logo-trimmed.png" alt="MavNext" width="260" height="44">
-      <h1>A leadership workspace for student organization officers.</h1>
-      <p class="muted">Plan meetings, track tasks, and pass each role to the next officer with a structured, reviewable handoff.</p>
-      <div class="flow" aria-label="How it fits together"><span>Workspace</span>${icon('chevronRight', 'icon-sm')}<span>Meetings &amp; tasks</span>${icon('chevronRight', 'icon-sm')}<span>Role handoff</span>${icon('chevronRight', 'icon-sm')}<span>Incoming review</span>${icon('chevronRight', 'icon-sm')}<span>Archive</span></div>
-      <p class="small muted">An independent student-developed pilot. Not an official UTA service and not endorsed by the university.</p>
-    </section>`;
+  const brandPanel = () => MN.brandPanel();
 
-  MN.views.entry = {
-    title: 'Welcome',
-    render() {
-      const legacy = MN.readLegacyDraft();
-      const hasLocal = !!new MN.LocalAdapter(MN.KEYS.local).load();
-      return html`
-        <div class="entry">
-          ${brandPanel()}
-          <section class="entry-main" aria-labelledby="entry-h">
-            <div class="entry-card">
-              <h2 id="entry-h" tabindex="-1" data-page-title style="margin-bottom:16px">Get started</h2>
-              <a class="entry-option" href="#/signin">${icon('login')}<div><strong>Sign in</strong><span>Open your organization's shared workspace.</span></div></a>
-              <a class="entry-option" href="#/signup">${icon('userPlus')}<div><strong>Create account</strong><span>Start a workspace or accept an officer invitation.</span></div></a>
-              <button type="button" class="entry-option" data-action="enterDemo">${icon('compass')}<div><strong>Explore demo</strong><span>A fictional club with sample meetings, tasks, and handoffs. No sign-up. Kept separate from your own records.</span></div></button>
-              <button type="button" class="entry-option" data-action="enterLocal">${icon('device')}<div><strong>${hasLocal ? 'Open this device\'s workspace' : 'Use on this device without an account'}</strong><span>Records stay in this browser only. Nothing is shared with other officers.</span></div></button>
-              ${legacy ? html`<div class="notice notice-info" style="margin-top:8px">${icon('info')}<div>A handoff draft from the earlier version of MavNext is saved in this browser${legacy.data && legacy.data.meta && legacy.data.meta.orgName ? html` (<strong>${legacy.data.meta.orgName}</strong>)` : ''}. It has not been changed. ${hasLocal ? 'You can import a copy from Settings in your device workspace.' : 'Choose "Use on this device" to import a copy.'}</div></div>` : ''}
-              <p class="entry-foot">Never enter passwords, recovery codes, or account numbers in MavNext.</p>
-            </div>
-          </section>
-        </div>`;
-    }
-  };
+  // MN.views.entry (the public landing page) lives in js/views-landing.js.
   MN.actions.enterDemo = () => { MN.openDemo(); MN.go('#/overview'); };
   MN.actions.enterLocal = () => { if (MN.openLocal()) MN.go('#/overview'); else MN.go('#/local-setup'); };
 
@@ -388,75 +377,22 @@
     });
   };
 
-  function accountsUnavailable(title) {
-    return html`
-      <div class="entry">${brandPanel()}
-        <section class="entry-main"><div class="auth-card">
-          <a class="back-link" href="#/">${icon('chevronLeft', 'icon-sm')}Back</a>
-          <h1 tabindex="-1" data-page-title>${title}</h1>
-          <div class="notice notice-warn" style="margin:16px 0">${icon('info')}<div><strong>Accounts are not set up on this deployment yet.</strong><br>Shared sign-in needs a database connection that the project owner has not configured. No account details are collected here.</div></div>
-          <p class="muted small" style="margin-bottom:16px">Until then you can explore the demo, or keep your own records in this browser.</p>
-          <div class="btn-row"><button class="btn btn-primary" data-action="enterDemo">Explore demo</button><button class="btn" data-action="enterLocal">Use on this device</button></div>
-        </div></section>
-      </div>`;
-  }
-  function emailForm(title, sub, intent) {
-    return html`
-      <div class="entry">${brandPanel()}
-        <section class="entry-main"><div class="auth-card">
-          <a class="back-link" href="#/">${icon('chevronLeft', 'icon-sm')}Back</a>
-          <h1 tabindex="-1" data-page-title>${title}</h1>
-          <p class="muted" style="margin-bottom:24px">${sub}</p>
-          <form data-form="sendLink" data-intent="${intent}" novalidate>
-            <div class="field"><label for="au-email">School or personal email</label><input class="input" id="au-email" type="email" name="email" autocomplete="email" required><p class="field-error" data-err-for="email" hidden></p></div>
-            <button class="btn btn-primary" type="submit">Email me a sign-in link</button>
-            <p class="hint" style="margin-top:12px">MavNext does not use passwords. We email a one-time link.</p>
-            <div role="status" aria-live="polite" data-link-status style="margin-top:12px"></div>
-          </form>
-        </div></section>
-      </div>`;
-  }
-  MN.views.signin = { title: 'Sign in', render() { return MN.Remote && MN.Remote.configured() ? emailForm('Sign in', 'Enter the email on your MavNext account.', 'signin') : accountsUnavailable('Sign in'); } };
-  MN.views.signup = { title: 'Create account', render() { return MN.Remote && MN.Remote.configured() ? emailForm('Create account', 'Each officer has their own account. After signing in you can create a workspace or accept an invitation.', 'signup') : accountsUnavailable('Create account'); } };
-  MN.forms.sendLink = (form) => {
-    const d = MN.formData(form);
-    if (!MN.showErrors(form, /.+@.+\..+/.test(d.email) ? {} : { email: 'Enter a valid email address.' })) return;
-    const st = form.querySelector('[data-link-status]');
-    st.textContent = 'Sending…';
-    return MN.Remote.sendLink(d.email.trim()).then(() => {
-      st.innerHTML = String(html`<div class="notice notice-ok">${icon('check')}<div>The sign-in service accepted the request. Check ${d.email} for a link; it can take a minute and may land in spam.</div></div>`);
-    }, (err) => { st.innerHTML = String(html`<div class="notice notice-danger">${icon('alert')}<div>${err.message || 'Could not send a link.'}</div></div>`); });
-  };
-  MN.views.invite = {
-    title: 'Invitation',
-    render(p) {
-      if (!(MN.Remote && MN.Remote.configured())) return accountsUnavailable('Invitation');
-      return html`<div class="entry">${brandPanel()}<section class="entry-main"><div class="auth-card"><h1 tabindex="-1" data-page-title>Accept invitation</h1>
-        <p class="muted" style="margin:8px 0 16px">Sign in with the email address the invitation was created for. The invitation is checked against that address before access is granted.</p>
-        <div class="btn-row"><button class="btn btn-primary" data-action="acceptInvite" data-token="${p.id}">Accept invitation</button><a class="btn" href="#/signin">Sign in first</a></div>
-        <div role="status" aria-live="polite" data-invite-status style="margin-top:12px"></div></div></section></div>`;
-    }
-  };
-  MN.actions.acceptInvite = (el) => {
-    const st = document.querySelector('[data-invite-status]');
-    MN.Remote.acceptInvitation(el.dataset.token).then(() => { st.textContent = 'Invitation accepted.'; MN.Remote.restore().then(() => MN.go('#/overview')); },
-      (err) => { st.textContent = err.message || 'This invitation could not be accepted.'; });
-  };
-
-  MN.forms.createOrg = (form) => {
-    const d = MN.formData(form);
-    const errs = {};
-    if (!d.orgName.trim()) errs.orgName = 'Enter the organization name.';
-    if (!d.myName.trim()) errs.myName = 'Enter your name.';
-    if (!MN.showErrors(form, errs)) return;
-    return MN.Remote.createOrganization(d.orgName.trim(), d.myName.trim(), d.term.trim()).then(() => MN.Remote.restore()).then(() => MN.go('#/overview'));
-  };
-
   MN.views.notFound = { title: 'Not found', render() { return ui.empty('alert', 'Page not found', 'This address does not match a page in MavNext.', html`<a class="btn" href="#/overview">Go to overview</a>`); } };
 
   // ---------- Boot ----------
   document.addEventListener('DOMContentLoaded', () => {
     const start = () => MN.render({ nav: true, initial: true });
-    if (MN.Remote && MN.Remote.configured()) MN.Remote.init().then(start, start); else start();
+    if (!(MN.Remote && MN.Remote.configured())) return start();
+    MN.Remote.init().then(() => {
+      const sess = MN.Session.get();
+      if (!MN.Remote.userId() || (sess && sess.mode !== 'remote')) return start();
+      return MN.Remote.restore().then(() => {
+        let pending = null;
+        try { pending = localStorage.getItem(MN.PENDING_INVITE); } catch (e) { /* storage unavailable */ }
+        if (pending) history.replaceState(null, '', `#/invite/${pending}`);
+        else if (!location.hash || location.hash === '#/') history.replaceState(null, '', '#/overview');
+        start();
+      });
+    }).catch((err) => { console.error(err); MN.toast('Shared accounts are unavailable right now. Check your connection.'); start(); });
   });
 })();

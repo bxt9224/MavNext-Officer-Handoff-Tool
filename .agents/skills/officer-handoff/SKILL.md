@@ -11,6 +11,8 @@ description: >-
 
 > **Revision history**
 > - v1 (2026-11-20): Renamed from `officer-handoff`. MavNext name and brass/ivory palette; resume banner, demo-overwrite confirmation, character counters, aria states, pilot documentation.
+> - v4 (2026-11-21): Noto Sans (self-hosted) replaces Inter; UTA heading weights; cinematic landing with GSAP/ScrollTrigger/Lenis (vendored); docs/uta-requirements.md is the reference for brand decisions.
+> - v3 (2026-11-21): Supabase connected; email+password accounts with consent; onboarding (request to join / invitation / create); migration 002; security center. Rule: any schema change ships as a numbered migration AND in schema.sql, with tests in tests/rls_test*.py.
 > - v2 (2026-11-20): Product expanded from one anonymous form to an organization workspace (meetings, tasks, handoffs, members, archive). The rule against a backend is **replaced**: shared accounts use Supabase with row-level security, off until configured. Blue/orange palette restored per the owner's brief. Storage split into isolated keys; the v1 draft key is read-only. Lessons from verification recorded in §12.
 
 ---
@@ -62,7 +64,7 @@ description: >-
 
 ## 6. Visual system
 
-Primary `#0064B1`, navy text `#142638`, orange accent `#F58025` (**never for text**; logo + active-nav marker), page `#F6F8FB`, panels `#FFFFFF`, muted `#526176`, borders `#DCE3EC`. One sans family (Inter → system). Titles ~28px, section headings 17–20px, body 14–16px, meta 12–14px. Sidebar 240px, topbar 64px, 8px spacing, 8–12px radii, thin borders, minimal shadow. No gradients, glass, decorative charts, or dead controls.
+Primary `#0064B1`, navy text `#142638`, orange accent `#F58025` (**never for text**; logo + active-nav marker), page `#F6F8FB`, panels `#FFFFFF`, muted `#526176`, borders `#DCE3EC`. One sans family: Noto Sans, Verdana fallback (UTA web typeface); H1/H2 800, H3/H4 700, H5/H6 600, body 400. Titles ~28px, section headings 17–20px, body 14–16px, meta 12–14px. Sidebar 240px, topbar 64px, 8px spacing, 8–12px radii, thin borders, minimal shadow. No gradients, glass, decorative charts, or dead controls.
 
 ## 7. Honest copy
 
@@ -101,3 +103,23 @@ Primary `#0064B1`, navy text `#142638`, orange accent `#F58025` (**never for tex
 - `position:absolute` screen-reader text inside an `overflow:auto` table wrapper escapes it unless the wrapper is positioned.
 - In RLS subqueries, unqualified column names resolve to the *inner* table. `h.org_id = org_id` compares a column to itself. Always qualify with the policy's table name.
 - Playwright `check()` on an element that re-renders after `change` times out. Click it, then assert the stored state.
+
+## 13. Lessons learned (Iteration 4)
+
+- Password accounts work from `file://` (double-click). Email links can't return to a file, so they go to the Site URL; leave `emailRedirectTo` unset from `file://` and use `siteUrl` from config for invitation links.
+- With PKCE, email links must be opened in the browser that requested them. Password sign-in avoids this for everyday use.
+- Supabase's default email sender only reaches project team members (about 2 per hour) and templates can't be edited without custom SMTP. Don't design flows that depend on custom template content.
+- Browsers drop a `<form>` nested inside another form. Keep status/result areas outside forms that get re-rendered.
+- After copying files to the team folder, verify checksums; a just-written output can be read stale.
+- Supabase's SQL editor warns on `drop ... if exists`; migrations should only drop objects they immediately recreate.
+
+## 14. Landing page and motion rules (Iteration 5)
+
+- The landing page is `MN.views.entry` (`js/views-landing.js`); motion lives only in `js/landing-motion.js`. `MN.onLeave` must tear it down before any other route renders.
+- Exactly one loop: Lenis (`autoRaf: false`) runs from `gsap.ticker`. Register ScrollTrigger once. Never add another requestAnimationFrame loop.
+- Content must be fully visible without the libraries. Only GSAP sets initial hidden states. Under `prefers-reduced-motion`, nothing animates and Lenis is off.
+- Use the logo only on white surfaces. Never recolor, reverse, crop, or animate parts of it. Use no UTA seal, mascot, or signature.
+- Bright UTA Orange is decorative only. Check contrast for any new text color, including on #F6F8FB.
+- Photos come only from `assets/photos/` with a permission record. Never use generated people presented as UTA students, or another campus labeled as UTA.
+- Fonts opened from `file://` are blocked unless embedded (data URIs). Don't switch back to plain font files without keeping that fallback.
+- ScrollTrigger `once: true` triggers remove themselves; count triggers on a fresh load when testing for duplicates.

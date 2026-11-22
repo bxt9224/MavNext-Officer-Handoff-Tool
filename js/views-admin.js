@@ -20,6 +20,7 @@
         : html`<button class="btn btn-primary" data-action="invite">${icon('userPlus')}Invite officer</button>`;
       return html`
         ${ui.pageHead('Members & Roles', 'Officer titles describe the job. Permissions decide what someone can do in MavNext.', addBtn)}
+        ${manage && c.mode !== 'local' ? joinRequestsPanel(c) : ''}
         ${c.mode === 'local' ? html`<div class="notice notice-info" style="margin-bottom:16px">${icon('info')}<div>This workspace is stored only in this browser. People listed here have no accounts and cannot sign in; they are names you can assign tasks and handoffs to.</div></div>` : ''}
         <div class="panel" style="margin-bottom:24px"><div class="table-wrap"><table class="list">
           <thead><tr><th scope="col">Name</th><th scope="col">Officer title</th><th scope="col">Permission</th><th scope="col" class="opt">Term</th>${manage ? html`<th scope="col"><span class="sr-only">Actions</span></th>` : ''}</tr></thead>
@@ -43,6 +44,37 @@
         </ul></div></section>
         ${former.length ? html`<section class="panel"><div class="panel-head"><h2>Former members</h2></div><div class="panel-body tight"><ul class="rows">${former.map((m) => html`<li class="row">${ui.avatar(m, true)}<div class="row-main"><span class="row-title">${m.name}</span><div class="row-meta"><span>${m.title}</span><span>${fmtTerm(m)}</span><span>No access</span></div></div></li>`)}</ul></div></section>` : ''}`;
     }
+  };
+
+  function joinRequestsPanel(c) {
+    const reqs = S().list('joinRequests', c.org.id).filter((r) => r.status === 'pending').sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    return html`<section class="panel" style="margin-bottom:24px" aria-labelledby="jr-h"><div class="panel-head"><h2 id="jr-h">Join requests</h2>${reqs.length ? ui.badge(`${reqs.length} waiting`, 'b-amber') : ''}</div>
+      <div class="panel-body tight">${reqs.length ? html`<ul class="rows">${reqs.map((r) => html`<li class="row" style="align-items:flex-start">
+        ${ui.avatar({ id: r.userId || r.id, name: r.requesterName }, true)}
+        <div class="row-main"><span class="row-title">${r.requesterName}</span>
+          <div class="row-meta"><span>${r.requesterEmail}</span>${r.desiredTitle ? html`<span>Role: ${r.desiredTitle}</span>` : ''}<span>Requested ${MN.relTime(r.createdAt)}</span></div>
+          ${r.message ? html`<p class="small prewrap" style="margin-top:6px">“${r.message}”</p>` : ''}</div>
+        <div class="btn-row"><button class="btn btn-sm btn-primary" data-action="approveRequest" data-id="${r.id}">Approve</button><button class="btn btn-sm" data-action="declineRequest" data-id="${r.id}">Decline</button></div></li>`)}</ul>`
+        : html`<p class="empty-inline">No pending requests. Officers can find ${c.org.listed === false ? 'this organization only through an invitation — it is hidden from the directory' : 'this organization in the directory and ask to join'}.</p>`}
+        ${c.mode === 'demo' ? html`<p class="hint" style="padding-bottom:12px">Demo: requests are fictional. Approving one adds a simulated member.</p>` : ''}
+      </div></section>`;
+  }
+  MN.actions.approveRequest = (el) => {
+    const r = S().get('joinRequests', el.dataset.id);
+    MN.openDialog({
+      title: `Approve ${r.requesterName}`,
+      body: html`<p class="small muted" style="margin-bottom:12px">${r.requesterName} (${r.requesterEmail}) will get access to this organization with the permission you choose. Check that you know this person and their role.</p>
+        <div class="grid-2"><div class="field"><label for="ap-title">Officer title</label><input class="input" id="ap-title" name="title" maxlength="60" value="${r.desiredTitle}"></div>
+        <div class="field"><label for="ap-perm">Permission</label><select class="select" id="ap-perm" name="permission">${Object.entries(MN.PERMISSIONS).map(([k, d]) => html`<option value="${k}" ${k === 'officer' ? 'selected' : ''}>${d.label}</option>`)}</select></div></div>
+        <p class="hint">Give Administrator only to people who should manage members and settings.</p><p class="field-error" data-dlg-error hidden></p>`,
+      actions: [{ label: 'Cancel', value: 'cancel' }, { label: 'Approve', value: 'ok', kind: 'btn-primary', submit: true }],
+      onAction: (v, form) => { const d = MN.formData(form); return MN.Svc.decideJoinRequest(r.id, true, d.permission, d.title.trim()).then(() => MN.toast(`${r.requesterName} approved.`), (e) => { throw new Error(MN.Remote ? MN.Remote.friendly(e) : e.message); }); }
+    });
+  };
+  MN.actions.declineRequest = (el) => {
+    const r = S().get('joinRequests', el.dataset.id);
+    MN.confirm({ title: `Decline ${r.requesterName}'s request?`, confirmLabel: 'Decline', danger: true, body: html`<p>${r.requesterName} won't get access. They can send a new request later.</p>` })
+      .then((ok) => ok && MN.Svc.decideJoinRequest(r.id, false).then(() => MN.toast('Request declined.')));
   };
 
   function memberFields(v, opts) {
@@ -165,10 +197,14 @@
                 <div class="field"><label for="st-nt">Next term</label><input class="input" id="st-nt" name="ntLabel" maxlength="40" value="${(o.nextTerm || {}).label || ''}"></div>
                 <div class="field"><label for="st-ns">Starts</label><input class="input" type="date" id="st-ns" name="ntStart" value="${(o.nextTerm || {}).start || ''}"></div>
                 <div class="field"><label for="st-ne">Ends</label><input class="input" type="date" id="st-ne" name="ntEnd" value="${(o.nextTerm || {}).end || ''}"></div>
-              </div></div><div class="editor-actions"><span></span><button class="btn btn-primary" type="submit">Save organization</button></div></form>`
+              </div>
+              ${c.mode !== 'local' ? html`<label class="check"><input type="checkbox" name="listed" ${o.listed === false ? '' : 'checked'}> <span><strong>List in the organization directory.</strong> Signed-in officers can find this organization's <em>name</em> and request to join; an administrator must approve every request. Uncheck to allow invitations only.</span></label>` : ''}
+              </div><div class="editor-actions"><span></span><button class="btn btn-primary" type="submit">Save organization</button></div></form>`
               : html`<div class="panel-body"><dl class="meta-list"><dt>Name</dt><dd>${o.name}</dd><dt>Current term</dt><dd>${(o.currentTerm || {}).label || '—'}</dd><dt>Next term</dt><dd>${(o.nextTerm || {}).label || '—'}</dd></dl><p class="hint" style="margin-top:12px">Only administrators can change organization settings.</p></div>`}
           </section>
 
+          ${c.mode === 'remote' ? accountPanel(c) : ''}
+          ${securityCenter(c)}
           <section class="panel"><div class="panel-head"><h2>Privacy and storage</h2></div><div class="panel-body">
             <p>${privacy}</p>
             <p style="margin-top:12px">Do not enter passwords, PINs, recovery codes, private financial records, or account numbers anywhere in MavNext. Access sections describe transfer procedures only.</p>
@@ -190,10 +226,79 @@
         </div>`;
     }
   };
+  function accountPanel(c) {
+    const p = MN.Remote.profile() || {};
+    const isLastAdmin = c.me.permission === 'admin' && MN.wouldRemoveLastAdmin(c.org.id, c.me.id, null);
+    return html`<section class="panel" aria-labelledby="acct-h"><div class="panel-head"><h2 id="acct-h">Your account &amp; security</h2></div>
+      <form data-form="profileEdit" novalidate><div class="panel-body">
+        <p class="small muted" style="margin-bottom:16px">Signed in as <strong>${MN.Remote.userEmail()}</strong>. Graduation term and major are visible only to you.</p>
+        <div class="grid-3">
+          <div class="field"><label for="ac-name">Full name</label><input class="input" id="ac-name" name="fullName" maxlength="80" value="${p.full_name || ''}"><p class="field-error" data-err-for="fullName" hidden></p></div>
+          <div class="field"><label for="ac-grad">Expected graduation</label><input class="input" id="ac-grad" name="gradTerm" maxlength="20" value="${p.grad_term || ''}"></div>
+          <div class="field"><label for="ac-major">Major (optional)</label><input class="input" id="ac-major" name="major" maxlength="80" value="${p.major || ''}"></div>
+        </div>
+        <p class="small muted">Privacy notice ${p.consent_version || '—'} accepted ${p.consent_at ? MN.fmtDateTime(p.consent_at) : '—'}. <a href="#/privacy" target="_blank" rel="noopener">Read it</a>.</p>
+      </div><div class="editor-actions"><span></span><button class="btn btn-primary" type="submit">Save profile</button></div></form>
+      <div class="panel-body" style="border-top:1px solid var(--border)">
+        <h3 style="margin-bottom:8px">Password and sessions</h3>
+        <div class="btn-row">
+          <button class="btn" data-action="changePassword">${icon('edit')}Change password</button>
+          <button class="btn" data-action="signOutEverywhere">${icon('logout')}Sign out on all devices</button>
+          <button class="btn btn-danger-outline" data-action="leaveOrg" ${isLastAdmin ? 'disabled title="You are the only administrator. Make someone else an administrator first."' : ''}>Leave ${c.org.name}</button>
+        </div>
+        ${isLastAdmin ? html`<p class="hint" style="margin-top:8px">You can't leave while you are the only administrator.</p>` : ''}
+        <p class="hint" style="margin-top:8px">For safety, MavNext signs you out after 60 minutes without activity.</p>
+      </div></section>`;
+  }
+  function securityCenter(c) {
+    const items = [
+      ['Individual accounts', 'Every officer signs in with their own email and password. No shared club passwords. Passwords are hashed by the sign-in provider and never visible to MavNext.'],
+      ['Verified access', 'New accounts confirm their email. Invitations are single-use, expire after 7 days, and only work for the exact email they were made for.'],
+      ['Approval before access', 'Finding an organization in the directory shows only its name. An administrator must approve every join request.'],
+      ['Database-enforced permissions', 'Row-level security rules decide what each person can read or change — even if someone bypasses the app and calls the database directly.'],
+      ['Tamper-proof handoffs', 'Submitted handoff versions can\'t be edited or deleted, even by administrators. Acknowledgments never change anyone\'s permissions.'],
+      ['Admin safeguards', 'Members can\'t promote themselves, and the last administrator can\'t be removed, demoted, or leave.'],
+      ['Secret detection', 'Handoff fields warn when text looks like a password, recovery code, or account number.'],
+      ['Session protection', 'Automatic sign-out after 60 minutes idle; sign out on all devices anytime.'],
+      ['Privacy by design', 'Minimal profile data, recorded consent, no ads or trackers, and private profile details.']
+    ];
+    return html`<section class="panel" aria-labelledby="sec-h"><div class="panel-head"><h2 id="sec-h">How MavNext protects your club</h2>${ui.badge(c.mode === 'remote' ? 'Active' : 'Shown for reference', c.mode === 'remote' ? 'b-green' : 'b-gray')}</div>
+      <div class="panel-body tight"><ul class="rows">${items.map(([t, d]) => html`<li class="row" style="align-items:flex-start"><span class="sec-state done" aria-hidden="true">${icon('check')}</span><div class="row-main"><strong>${t}</strong><div class="row-meta"><span>${d}</span></div></div></li>`)}</ul>
+      ${c.mode !== 'remote' ? html`<p class="hint" style="padding-bottom:12px">${c.mode === 'demo' ? 'In the demo, accounts and approvals are simulated in your browser; these protections apply to signed-in workspaces.' : 'This browser-only workspace has no accounts; these protections apply to signed-in workspaces.'}</p>` : ''}</div></section>`;
+  }
+  MN.forms.profileEdit = (form) => {
+    const d = MN.formData(form);
+    if (!MN.showErrors(form, (d.fullName || '').trim().length >= 2 ? {} : { fullName: 'Enter your full name.' })) return;
+    return MN.Remote.saveProfile({ fullName: d.fullName.trim(), gradTerm: d.gradTerm.trim(), major: d.major.trim() }).then(() => MN.toast('Profile saved.'), (e) => MN.toast(MN.Remote.friendly(e)));
+  };
+  MN.actions.changePassword = () => {
+    MN.openDialog({
+      title: 'Change password',
+      body: html`<div class="field"><label for="cp-new">New password</label><input class="input" id="cp-new" type="password" name="password" autocomplete="new-password" autofocus><span class="hint">At least 10 characters, with letters and numbers.</span><p class="field-error" data-err-for="password" hidden></p></div>
+        <div class="field"><label for="cp-confirm">Confirm new password</label><input class="input" id="cp-confirm" type="password" name="confirm" autocomplete="new-password"><p class="field-error" data-err-for="confirm" hidden></p></div><p class="field-error" data-dlg-error hidden></p>`,
+      actions: [{ label: 'Cancel', value: 'cancel' }, { label: 'Update password', value: 'ok', kind: 'btn-primary', submit: true }],
+      onAction(v, form) {
+        const d = MN.formData(form);
+        const errs = {};
+        if (d.password.length < 10 || !/[A-Za-z]/.test(d.password) || !/\d/.test(d.password)) errs.password = 'Use at least 10 characters with letters and numbers.';
+        else if (d.password !== d.confirm) errs.confirm = 'Passwords don\'t match.';
+        if (!MN.showErrors(form, errs)) return false;
+        return MN.Remote.updatePassword(d.password).then(() => MN.toast('Password updated.'));
+      }
+    });
+  };
+  MN.actions.signOutEverywhere = () => MN.confirm({ title: 'Sign out on all devices?', confirmLabel: 'Sign out everywhere', body: html`<p>You'll be signed out here and on every other browser or phone where you're signed in.</p>` })
+    .then((ok) => ok && MN.Remote.signOut(true).then(() => { MN.Store.close(); MN.Session.end(); MN.go('#/signin'); MN.toast('Signed out on all devices.'); }, (e) => MN.toast(e.message)));
+  MN.actions.leaveOrg = () => {
+    const { org } = MN.ctx();
+    MN.confirm({ title: `Leave ${org.name}?`, danger: true, confirmLabel: 'Leave organization', body: html`<p>You'll lose access to ${org.name}'s meetings, tasks, and handoffs. Records you created stay with the organization. To return, you'll need a new invitation or an approved request.</p>` })
+      .then((ok) => ok && MN.Remote.leaveOrganization(org.id).then(() => MN.Remote.restore()).then(() => { MN.Session.patch({ orgId: null }); MN.go('#/overview'); MN.toast(`You left ${org.name}.`); }, (e) => MN.toast(MN.Remote.friendly(e))));
+  };
+
   MN.forms.orgSettings = (form) => {
     const d = MN.formData(form);
     if (!MN.showErrors(form, d.name.trim() ? {} : { name: 'Enter a name.' })) return;
-    return MN.Svc.updateOrg({ name: d.name.trim(), currentTerm: { label: d.ctLabel.trim(), start: d.ctStart, end: d.ctEnd }, nextTerm: { label: d.ntLabel.trim(), start: d.ntStart, end: d.ntEnd } }).then(() => MN.toast('Organization saved.'));
+    return MN.Svc.updateOrg({ name: d.name.trim(), listed: 'listed' in d ? !!d.listed : undefined, currentTerm: { label: d.ctLabel.trim(), start: d.ctStart, end: d.ctEnd }, nextTerm: { label: d.ntLabel.trim(), start: d.ntStart, end: d.ntEnd } }).then(() => MN.toast('Organization saved.'));
   };
   MN.actions.exportWorkspace = () => {
     const c = MN.ctx();

@@ -4,11 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MavNext</title>
-  <meta name="description" content="MavNext — a leadership workspace that helps student organization officers run their term and hand off each role to the next officer. Independent student pilot.">
+  <meta name="description" content="MavNext helps student organization officers run their term and hand off each role to the next officer — meetings, tasks, and secure, structured handoffs in one workspace. Independent student pilot.">
+  <meta property="og:title" content="MavNext — officer transitions, organized">
+  <meta property="og:description" content="Lead your term. Prepare the next.">
+  <meta property="og:image" content="assets/photos/hero.jpg">
   <link rel="icon" type="image/png" href="assets/mavnext-mark.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="fonts/noto-sans.css">
+  <link rel="stylesheet" href="vendor/lenis-1.3.27/lenis.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,6 +21,10 @@
   <noscript><p style="padding:24px">MavNext needs JavaScript enabled.</p></noscript>
 
   <!-- Order matters: plain scripts (no modules) so the app also opens from file:// -->
+  <!-- Animation libraries (bundled, version-pinned; see vendor/README.md). The page works without them. -->
+  <script src="vendor/gsap-3.15.1/gsap.min.js"></script>
+  <script src="vendor/gsap-3.15.1/ScrollTrigger.min.js"></script>
+  <script src="vendor/lenis-1.3.27/lenis.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/util.js"></script>
   <script src="js/icons.js"></script>
@@ -33,5 +39,8 @@
   <script src="js/views-work.js"></script>
   <script src="js/views-handoff.js"></script>
   <script src="js/views-admin.js"></script>
+  <script src="js/views-account.js"></script>
+  <script src="js/landing-motion.js"></script>
+  <script src="js/views-landing.js"></script>
 </body>
 </html>

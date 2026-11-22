@@ -212,11 +212,30 @@
       return S().remove('invitations', invId);
     },
 
+    // ----- Join requests -----
+    decideJoinRequest(reqId, approve, perm, title) {
+      const { me, mode } = MN.ctx();
+      need(MN.can(me, 'members.manage'), 'Only an administrator can decide join requests.');
+      if (mode === 'remote') return MN.Remote.decideRequest(reqId, approve, perm, title).then(() => MN.Remote.reload());
+      const r = S().get('joinRequests', reqId);
+      if (!r || r.status !== 'pending') return Promise.reject(new Error('This request was already decided.'));
+      const now = MN.nowISO();
+      let p = Promise.resolve();
+      if (approve) {
+        const userId = r.userId || MN.uid('u');
+        if (!MN.Store.ws.users.some((u) => u.id === userId)) MN.Store.ws.users.push({ id: userId, name: r.requesterName, email: r.requesterEmail });
+        const mem = { id: MN.uid('m'), orgId: r.orgId, userId, name: r.requesterName, email: r.requesterEmail, title: title || r.desiredTitle, permission: perm, termStart: '', termEnd: '', status: 'active', joinedAt: now };
+        p = S().put('members', mem, { silent: true }).then(() => log('member.joined', `approved ${r.requesterName}'s request to join${mode === 'demo' ? ' (simulated)' : ''}`, { kind: 'member', id: mem.id }));
+      }
+      return p.then(() => S().put('joinRequests', Object.assign({}, r, { status: approve ? 'approved' : 'declined', decidedAt: now, decidedBy: me.id })));
+    },
+
     // ----- Organization -----
     updateOrg(patch) {
       const { me, org } = MN.ctx();
       need(MN.can(me, 'org.settings'));
-      return S().put('orgs', Object.assign({}, org, patch)).then(() => log('org.updated', 'updated organization settings'));
+      const clean = {}; Object.keys(patch).forEach((k) => { if (patch[k] !== undefined) clean[k] = patch[k]; });
+      return S().put('orgs', Object.assign({}, org, clean)).then(() => log('org.updated', 'updated organization settings'));
     }
   };
   MN.Svc = Svc;

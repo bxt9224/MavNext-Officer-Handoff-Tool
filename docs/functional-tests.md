@@ -1,5 +1,64 @@
 # MavNext — Functional Tests
 
+## Iteration 4: accounts, joining, security (2026-11-21)
+
+All results are from automated runs on 2026-11-21. Nothing here is from human user testing.
+
+| Suite | What it covers | Result |
+|---|---|---|
+| `tests/functional.py` | Demo and browser-only workflows (unchanged suite) | 23/23 pass |
+| `tests/accounts_mock.py` | Sign-up validation, password rules, unconfirmed sign-in, profile completion, onboarding, directory, join request → admin approval, settings, password change and reset, invitations while signed out, privacy page, mobile sign-up. Runs the real app against an **in-browser stand-in** for Supabase. | 27/27 pass |
+| `tests/rls_test.py` | Original database rules (001), local PostgreSQL 16 | 34/34 pass |
+| `tests/rls_test2.py` | Migration 002 rules, local PostgreSQL 16 | 38/38 pass |
+| Live project, logged out | REST calls with the publishable key to all tables and the new functions | All denied (401) |
+
+**Not yet verified:** a real person signing up, confirming email, and signing in on the live project; two real accounts checking each other's isolation.
+
+### Migration 002 database checks
+
+| Check | Result |
+|---|---|
+| sign-up creates profile from consented metadata | Pass |
+| no profile without consent | Pass |
+| profiles are private to their owner | Pass |
+| cannot edit another profile | Pass |
+| consent time cannot be backdated | Pass |
+| user without profile can complete own profile | Pass |
+| create_organization: profile name + title, admin | Pass |
+| org name length enforced | Pass |
+| directory lists names of listed orgs only | Pass |
+| directory search | Pass |
+| anonymous cannot use directory | Pass |
+| directory does not grant read access to org | Pass |
+| no direct inserts into join_requests | Pass |
+| request_to_join works | Pass |
+| only one pending request per org | Pass |
+| cannot request unlisted org | Pass |
+| a second user can also request (one pending each) | Pass |
+| pending request grants no membership | Pass |
+| other users cannot see requests | Pass |
+| requester sees own request | Pass |
+| admin sees org requests | Pass |
+| requester cannot approve self | Pass |
+| admin approves | Pass |
+| approved member has chosen permission/title | Pass |
+| approved member can now read org | Pass |
+| approval recorded in activity | Pass |
+| request cannot be decided twice | Pass |
+| cannot cancel someone else's request | Pass |
+| requester can cancel own | Pass |
+| unconfirmed email cannot accept invitation | Pass |
+| expired invitation rejected | Pass |
+| valid invitation accepted | Pass |
+| invited member gets profile name | Pass |
+| last admin cannot leave | Pass |
+| member can leave | Pass |
+| after leaving, no access | Pass |
+| former member can rejoin through approval | Pass |
+| internal membership helper not callable | Pass |
+
+---
+
 ## Iteration 3 — workspace redesign (2026-11-20)
 
 **How these were run:** automated Playwright scripts in headless Google Chrome against the app served locally (`python -m http.server`). Desktop viewport 1366×900; mobile 375×780. Results below are the actual output of the final run. No human user testing is reported here.

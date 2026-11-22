@@ -151,7 +151,10 @@
     return {
       schemaVersion: 1, mode: 'demo', seededOn: T,
       users: MN.clone(MN.DEMO_USERS),
-      orgs, members, meetings, tasks, handoffs, handoffVersions, handoffReviews, activity, invitations: []
+      orgs, members, meetings, tasks, handoffs, handoffVersions, handoffReviews, activity, invitations: [],
+      joinRequests: [
+        { id: 'jr_sam', orgId: org, orgName: orgs[0].name, userId: 'u_sam', requesterName: 'Sam Patel', requesterEmail: 'sam.patel@example.edu', desiredTitle: 'Webmaster', message: 'I was elected webmaster at the last general body meeting.', status: 'pending', createdAt: ts(-1, '11:20') }
+      ]
     };
   };
 })();
