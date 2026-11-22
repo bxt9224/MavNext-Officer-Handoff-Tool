@@ -233,3 +233,61 @@ feat: rebrand to MavNext, add resume flow, accessibility, docs
 
 - Configure and verify Supabase (see `backend-setup.md`).
 - Human usability testing and screen-reader testing.
+
+
+---
+
+# Iteration 4: Real accounts and joining (2026-11-21)
+
+> AI-assisted with Claude on branch `supabase-login`. Not committed by the agent.
+
+## What the team asked for
+- Officers only; email + password accounts; sign-up with full name, expected graduation term, major, and privacy consent.
+- Both invitations and "request to join" an organization.
+- Stronger security and features that stand out for MavPitch.
+
+## What changed
+- **Supabase connected** (URL + publishable key in `js/config.js`). Schema applied, then migration 002: profiles with server-timestamped consent, organization directory (names only), join requests with admin approval, invitation expiry plus a confirmed-email requirement, `leave_organization`, and an organization-creation limit.
+- **Auth settings:** confirm email on, min password 10, letters and digits required, magic links off.
+- **New screens** (`js/views-account.js`): sign up, check email, sign in (with resend confirmation and repeated-failure slowdown), forgot/reset password, profile completion for older accounts, onboarding (request / invitation / create), privacy notice.
+- **Admin features:** join-request panel with approve (choose title and permission) or decline, an overview alert for waiting requests, and a directory listing toggle.
+- **Account and security settings:** edit profile, consent record, change password, sign out on all devices, leave organization, 60-minute idle sign-out, and a "How MavNext protects your club" panel.
+- **Demo:** includes a fictional pending join request (Sam Patel), so approval can be shown without accounts.
+
+## Problems found and fixed
+- The first email-link test was opened from `file://`, so Supabase fell back to the GitHub Pages site, which had no config. Added a warning when the app is opened as a file.
+- A nested `<form>` made the code-entry button resubmit the email form. Moved the status area outside the form.
+- One file copy to the team folder delivered a stale version. Copies are now checked byte-for-byte (md5).
+- Test-writing mistakes (operator precedence in SQL, leftover database state) were fixed in the tests, not the product.
+
+## Landing page (2026-11-21)
+- New public landing page at `#/` (`js/views-landing.js`): hero, the problem, how it works, three feature sections with real demo screenshots (`assets/screen-*.jpg`), a security band, FAQ, and a final call to action. Signed-in officers skip it.
+- Copy is factual: no invented statistics or testimonials, and the UTA disclaimer stays in the hero note area and footer.
+- Verified at 1440 px and 390 px: no horizontal overflow, nav links scroll to sections and move focus, FAQ opens, demo and sign-up buttons work, no page errors. Demo regression 23/23; account flows 27/27.
+
+---
+
+# Iteration 5: Cinematic landing page, UTA-guideline-informed (2026-11-21)
+
+## Research
+Read UTA's Brand Standards, Digital Branding, Web Colors, Typefaces, Digital Design System, Images & Video, Photography, Co-branding, Unit Signatures, Student Organizations, and Accessibility pages. Findings, conflicts (orange RGB values, contradictory orange usage), and open review items are in `docs/uta-requirements.md`.
+
+## What changed
+- **Landing page rebuilt** (`js/views-landing.js`): white header with the unmodified logo; a photographic hero under a dark-blue overlay ("Lead your term. Prepare the next."); an expanding photo band; an asymmetric "Good leadership should carry forward." section with two layered photos; one HTML product scene (sample data) showing organize → handoff → incoming review; a Web Blue closing call to action; and a white footer with the independent-pilot statement.
+- **Motion** (`js/landing-motion.js`): GSAP 3.15.1 + ScrollTrigger + Lenis 1.3.27 on one `gsap.ticker` loop, as in Lenis's documented integration. A short hero entrance, a settling hero image, the band expanding inside its frame, two-layer parallax (desktop, ≤ 60 px), once-only reveals, and a one-time product sequence. Reduced motion turns all of it off. Everything is torn down when leaving the page.
+- **Typography:** Noto Sans self-hosted for the whole app; headings use UTA's 800/700/600 weights. Latin weights are embedded as data URIs because Chrome blocks font files from `file://`.
+- **Removed** Google Fonts (Inter); the site no longer needs any CDN.
+
+## Problems found and fixed
+- Fonts silently fell back to Verdana when opened as a file (blocked by the browser's cross-origin rules for `file://`). Fixed with embedded fonts.
+- The hero headline wrapped mid-phrase at desktop widths; each sentence is now kept on its own line.
+- Step numbers in Web Orange measured 4.24:1 on the gray section background; changed to UTA Blue (5.71:1).
+- Test-harness issues (a mock-state save race, comparing trigger counts mid-scroll) were fixed in the tests.
+
+## Photos
+The owner supplied 9 images: 6 UTA photographs (permission granted by UTA, per the owner) and 3 AI-generated images. Used:
+- hero: Big Event photo
+- band: Homecoming photo
+- why section: two AI images, unlabeled by the owner's choice
+
+To keep hero text at AA contrast on the real photo, I strengthened the overlay (with an extra setting for 861–1080 px) and made the hero text solid white. Details and the remaining caveat are in `assets/photos/README.md` and `docs/uta-requirements.md` (R3).

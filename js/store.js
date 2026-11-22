@@ -18,7 +18,7 @@
     legacy: 'uta_officer_handoff_data'
   };
   MN.KEYS = KEYS;
-  const COLLECTIONS = ['orgs', 'members', 'meetings', 'tasks', 'handoffs', 'handoffVersions', 'handoffReviews', 'activity', 'invitations'];
+  const COLLECTIONS = ['orgs', 'members', 'meetings', 'tasks', 'handoffs', 'handoffVersions', 'handoffReviews', 'activity', 'invitations', 'joinRequests'];
   /** Insert-only collections: records are never updated or deleted once written. */
   const APPEND_ONLY = ['handoffVersions', 'handoffReviews', 'activity'];
 

@@ -24,7 +24,7 @@ async def main():
     await pg.goto(URL); await pg.wait_for_timeout(300)
     banner = await pg.inner_text('body')
     rec('0. Earlier draft detected on entry', 'My Real Club' in banner, 'entry screen notes the earlier draft by org name')
-    await pg.click('text=Use on this device without an account'); await pg.wait_for_timeout(300)
+    await pg.click('.lx-footer a:has-text("Use without an account")'); await pg.wait_for_timeout(300)
     await pg.click('text=Create workspace'); await pg.wait_for_timeout(400)
     t=await pg.input_value('#qa-q_mission')
     rec('0b. Earlier draft imported as copy', t=='Real draft text — must survive' and (await ls(pg,'uta_officer_handoff_data'))==LEGACY, f'imported text="{t}", legacy key unchanged')
@@ -34,7 +34,7 @@ async def main():
     local_before=await ls(pg,'mavnext.local.v1'); legacy_before=await ls(pg,'uta_officer_handoff_data')
     # 1 demo entry
     await pg.click('.profile-btn'); await pg.click('text=Close workspace'); await pg.click('.dialog button:has-text("Close workspace")'); await pg.wait_for_timeout(300)
-    await pg.click('text=Explore demo'); await pg.wait_for_timeout(400)
+    await pg.click('.lx-hero button:has-text("Explore demo")'); await pg.wait_for_timeout(400)
     rec('1. Enter demo without overwriting existing drafts', (await ls(pg,'mavnext.local.v1'))==local_before and (await ls(pg,'uta_officer_handoff_data'))==legacy_before and (await ls(pg,'mavnext.demo.v1')) is not None,
         'local workspace and v1 draft byte-identical after entering demo; demo stored under its own key')
     # 2 create meeting
@@ -148,7 +148,7 @@ async def main():
     mp=await m.new_page(); mp.on('pageerror', lambda e: errs.append(str(e)))
     await mp.goto(URL); await mp.evaluate("localStorage.clear()"); await mp.goto(URL); await mp.wait_for_timeout(300)
     await mp.screenshot(path=OUT+'/shots/m_entry.png', full_page=True)
-    await mp.click('text=Explore demo'); await mp.wait_for_timeout(400)
+    await mp.click('.lx-hero button:has-text("Explore demo")'); await mp.wait_for_timeout(400)
     over=[]
     for r in ['overview','meetings','meetings/mt_exec','tasks?scope=all','handoffs','handoffs/h_pres','handoffs/h_pres/review','handoffs/h_pres/view','members','archive','settings']:
         await mp.goto(URL+'#/'+r); await mp.wait_for_timeout(250)

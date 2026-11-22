@@ -86,6 +86,7 @@
 
       return html`
         ${ui.pageHead(org.name, term ? `Current term: ${term}` : 'No current term set', MN.can(c.me, 'meeting.create') ? html`<a class="btn" href="#/meetings/new">${icon('plus')}New meeting</a><button class="btn btn-primary" data-action="newTask">${icon('plus')}New task</button>` : '')}
+        ${MN.can(c.me, 'members.manage') && S().list('joinRequests', org.id).some((r) => r.status === 'pending') ? html`<div class="notice notice-info" style="margin-bottom:16px">${icon('userPlus')}<div><strong>${MN.plural(S().list('joinRequests', org.id).filter((r) => r.status === 'pending').length, 'person is', 'people are')} asking to join ${org.name}.</strong> <a href="#/members">Review requests</a></div></div>` : ''}
         <div class="stats">
           <div class="stat"><div class="label">Upcoming meetings</div><div class="value">${up.length}</div><div class="sub">${up[0] ? `Next: ${MN.fmtDate(up[0].date, { weekday: undefined, year: undefined })}` : 'None scheduled'}</div></div>
           <div class="stat"><div class="label">Your open tasks</div><div class="value">${myTasks.length}</div><div class="sub">${myTasks.filter(isOverdue).length} overdue</div></div>
