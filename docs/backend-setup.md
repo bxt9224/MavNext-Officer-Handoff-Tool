@@ -1,14 +1,15 @@
 # Real accounts (Supabase)
 
-**Status (2026-11-21):** a Supabase project is connected through `js/config.js` on the `supabase-login` branch. `supabase/schema.sql` and `supabase/migrations/002_accounts_and_joining.sql` have been applied, and the auth settings below are set. End-to-end sign-up by a real person had **not yet been confirmed** when this was written. See "Verification" at the end.
+**Status (2026-11-22):** sign-in redesigned (lamp scene, Google button, 12-character rules). Earlier status (2026-11-21): a Supabase project is connected through `js/config.js` on the `supabase-login` branch. `supabase/schema.sql` and `supabase/migrations/002_accounts_and_joining.sql` have been applied, and the auth settings below are set. End-to-end sign-up by a real person had **not yet been confirmed** when this was written. See "Verification" at the end.
 
 ## How accounts work
 
 | Step | What happens | Enforced by |
 |---|---|---|
-| Sign up | Full name, email, password, expected graduation term, optional major, and required privacy consent. Supabase emails a confirmation link. | Supabase Auth; `mn_new_user` trigger creates the profile only if consent was given |
+| Sign up | **Email:** full name, email, password (with a strength meter and an optional suggested password). Supabase emails a confirmation link. **Google:** "Continue with Google" (once the provider is enabled — see below). | Supabase Auth |
+| Finish setting up | On first sign-in (email or Google), the officer adds expected graduation term, optional major, and agrees to the privacy notice. Only then is a profile created. | `profiles` table + RLS; app redirects to `#/profile-setup` until it exists |
 | Confirm email | The person clicks the link once. Until then, sign-in is refused. | Supabase "Confirm email" setting |
-| Sign in | Email + password. Passwords are hashed by Supabase and never stored by MavNext. | Supabase Auth (min 10 characters, letters + digits) |
+| Sign in | Email + password, or Google. Passwords are hashed by Supabase and never stored by MavNext. | Supabase Auth (min 12 characters; lowercase, uppercase, digit and symbol) |
 | No organization yet | The onboarding page offers three ways in: request to join, use an invitation, or create an organization. | — |
 | Request to join | The directory shows only the **names** of listed organizations. A request gives no access until an administrator approves it. | `org_directory`, `request_to_join`, `decide_join_request`, RLS on `join_requests` |
 | Invitation | An admin creates a link for one email. It is single-use, expires after 7 days, and needs a confirmed email that matches. | `accept_invitation` |
@@ -21,8 +22,25 @@ The browser only uses the publishable key. Every table has row-level security, a
 
 ## Supabase settings in use
 
-- **Authentication → Sign In / Providers → Email:** Confirm email **on**; minimum password length **10**; password requirements **letters and digits**; magic links / email OTP **off** (password sign-in only).
+- **Authentication → Sign In / Providers → Email** (checked 2026-11-22): Confirm email **on**; minimum password length **12**; password requirements **lowercase, uppercase, digits and symbols**; secure email change **on**; require current password when updating **on** (the Settings → Change password dialog asks for it; reset links are exempt); leaked-password protection **off** (Pro plan only); magic links / email OTP **off**.
+  `js/password.js` mirrors these rules for instant feedback. **If you change them in Supabase, change `POLICY` in `js/password.js` too.**
+- **Google provider:** **disabled** as of 2026-11-22. The button is in place and explains this when clicked; see "Turning on Google sign-in".
 - **Authentication → URL Configuration:** Site URL `https://rojantimalsina7-droid.github.io/Officer-Handoff-Tool/`; redirect URLs: that same address plus `http://localhost:8000/`.
+
+## Turning on Google sign-in
+
+The app already calls `supabase.auth.signInWithOAuth({ provider: 'google' })` and returns to the page it started from. To switch it on:
+
+1. **Google Cloud console** → create or pick a project → **Google Auth Platform**:
+   - Audience: External. Data access: `openid`, `email`, `profile`. Branding: app name "MavNext", your support email. (Don't use UTA logos.)
+   - **Clients → Create client → Web application.**
+   - Authorized JavaScript origins: `https://rojantimalsina7-droid.github.io` and, for local testing, `http://localhost:8000`.
+   - Authorized redirect URI: the callback shown on Supabase's Google provider page — for this project `https://nacpckngdzqvihufyfrd.supabase.co/auth/v1/callback`.
+2. Copy the **Client ID** and **Client secret** into **Supabase → Authentication → Sign In / Providers → Google**, enable it, save.
+   The client secret goes **only** into the Supabase dashboard — never into `js/config.js` or any file in this repository.
+3. Redirect URLs in Supabase already include the GitHub Pages address and `http://localhost:8000/`; nothing else to add.
+
+Google sign-in can't start from a file opened by double-clicking (`file://`), because Google can't send you back to a file. The button says so and links to the online site.
 
 ## Opening the app by double-clicking `index.html`
 

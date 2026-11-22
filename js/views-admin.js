@@ -274,16 +274,20 @@
   MN.actions.changePassword = () => {
     MN.openDialog({
       title: 'Change password',
-      body: html`<div class="field"><label for="cp-new">New password</label><input class="input" id="cp-new" type="password" name="password" autocomplete="new-password" autofocus><span class="hint">At least 10 characters, with letters and numbers.</span><p class="field-error" data-err-for="password" hidden></p></div>
+      body: html`<div class="field"><label for="cp-current">Current password</label><input class="input" id="cp-current" type="password" name="current" autocomplete="current-password" autofocus><p class="field-error" data-err-for="current" hidden></p></div>
+        <div class="field"><label for="cp-new">New password</label><input class="input" id="cp-new" type="password" name="password" autocomplete="new-password"><span class="hint">${MN.Password.ruleText()}</span><p class="field-error" data-err-for="password" hidden></p></div>
         <div class="field"><label for="cp-confirm">Confirm new password</label><input class="input" id="cp-confirm" type="password" name="confirm" autocomplete="new-password"><p class="field-error" data-err-for="confirm" hidden></p></div><p class="field-error" data-dlg-error hidden></p>`,
       actions: [{ label: 'Cancel', value: 'cancel' }, { label: 'Update password', value: 'ok', kind: 'btn-primary', submit: true }],
       onAction(v, form) {
         const d = MN.formData(form);
         const errs = {};
-        if (d.password.length < 10 || !/[A-Za-z]/.test(d.password) || !/\d/.test(d.password)) errs.password = 'Use at least 10 characters with letters and numbers.';
+        if (!d.current) errs.current = 'Enter your current password.';
+        const pp = MN.Password.problem(d.password, { email: MN.Remote.userEmail() });
+        if (pp) errs.password = pp;
         else if (d.password !== d.confirm) errs.confirm = 'Passwords don\'t match.';
         if (!MN.showErrors(form, errs)) return false;
-        return MN.Remote.updatePassword(d.password).then(() => MN.toast('Password updated.'));
+        // The project requires the current password for changes made while signed in.
+        return MN.Remote.updatePassword(d.password, d.current).then(() => MN.toast('Password updated.'));
       }
     });
   };

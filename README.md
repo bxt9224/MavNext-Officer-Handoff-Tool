@@ -31,10 +31,10 @@ The site opens on a photographic landing page ("Lead your term. Prepare the next
 
 1. **Explore demo:** a fictional club (Riverside Robotics Society) with board members, meetings, tasks, a partly finished President handoff, and an archived Treasurer handoff. Use **View as** in the yellow demo bar to switch between the simulated people, including the incoming officer. Demo data lives under its own browser key and never touches other records. Reset it from **Settings → Reset demo workspace**.
 2. **Use on this device without an account:** a private workspace stored only in this browser. Nothing is shared, and other officers cannot receive handoffs. Use Print or Export to share. If a draft from the earlier version of MavNext exists, you can import a copy; the original is never modified.
-3. **Sign in / Create account:** individual officer accounts on Supabase. Sign-up asks for full name, email, password, expected graduation term, optional major, and privacy consent. After confirming their email, an officer either **creates an organization** (becoming its admin), **uses an invitation link**, or **requests to join** a listed organization, which an admin must approve. See [`docs/backend-setup.md`](docs/backend-setup.md) for setup, limits, and what has been verified.
+3. **Sign in / Create account:** individual officer accounts on Supabase, with email + password or Google. "Sign in" on the landing page opens a desk-lamp arrival screen (`#/enter`): pull the cord (drag, click, tap, Enter/Space) or press "Go straight to sign in"; `#/signin` opens the form directly. "Create an account" (`#/signup`) asks for full name, expected graduation, optional major, email, a password (live rules, strength meter, suggested strong password), and privacy consent, or offers Google. After confirming their email, an officer either **creates an organization** (becoming its admin), **uses an invitation link**, or **requests to join** a listed organization, which an admin must approve. See [`docs/backend-setup.md`](docs/backend-setup.md) for setup, limits, and what has been verified.
 
 ### Security highlights
-- Individual accounts with confirmed email; no shared club passwords. Passwords are hashed by Supabase and need 10+ characters with letters and digits.
+- Individual accounts with confirmed email; no shared club passwords. Passwords are hashed by Supabase and need 12+ characters with uppercase, lowercase, a number, and a symbol (mirrored in `js/password.js`).
 - Row-level security on every table, tested with 72 automated database checks. Logged-out visitors are denied everywhere.
 - Admin approval before access; invitations are single-use, expire after 7 days, and are bound to an email.
 - Submitted handoffs can't be edited or deleted, even by admins. The last admin can't be removed. No one can promote themselves.
@@ -77,7 +77,10 @@ js/permissions.js       permission model + derived handoff status
 js/svc.js               all write operations (permission-checked)
 js/fixtures.js          demo data (fictional)
 js/remote.js            Supabase accounts + data adapter
-js/views-account.js     sign up/in, password reset, profile, onboarding, privacy notice
+js/views-auth.js        arrival (#/enter), sign in, forgot password, registration, check email
+js/auth-scene.js        the lamp (image layers in assets/lamp/) + pull-cord gesture (decorative; sign-in works without it)
+js/password.js          password rules (mirror Supabase), strength estimate, strong-password generator
+js/views-account.js     reset password, profile setup, onboarding, invitations, privacy notice
 js/views-landing.js     public landing page
 js/landing-motion.js    landing animations (one GSAP-driven loop; reduced-motion safe)
 vendor/                 GSAP 3.15.1, Lenis 1.3.27 (version-pinned, with licenses)

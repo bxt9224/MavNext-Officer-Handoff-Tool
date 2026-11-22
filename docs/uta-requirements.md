@@ -30,6 +30,14 @@ Checked 2026-11-21 against the official pages listed at the end. MavNext is an *
 - **Self-hosting** fonts and libraries (no CDN) so the page works offline and from `file://`.
 - Product name "MavNext" and its logo are the team's own.
 
+### Lavender surface (2026-11-22)
+- `#E9E8F8` ("soft lavender white") is a **MavNext custom surface colour, not a UTA brand colour**. It is used for page backgrounds, the sign-in card, and the arrival button. Text on it: #003865 (9.9:1), #475569 (6.3:1), links #0064B1 (5.0:1). The specified input border #94A3B8 is 2.56:1 on white, under the 3:1 WCAG suggests for field edges (kept as specified; white fields on the lavender card stay distinguishable). Review item.
+
+### Sign-in page (2026-11-22, superseded by Iteration 7 layout)
+- Same tokens: background UTA Web Blue #003865, primary buttons UTA Blue #0064B1. Bright UTA Orange appears only as the pull ring and in the logo, both decorative (the ring is a control with 4.56:1 against the background; it is never text).
+- Noto Sans 800/700/600/400; body and field text 15–16 px; input borders 3.1:1 and placeholder 4.8:1 against white.
+- No UTA marks. The footer line says it is an independent student pilot, not an official UTA service.
+
 ## 3. Items requiring institutional review (open)
 
 | # | Item | Why |

@@ -44,7 +44,7 @@ async def main():
     rec('mobile menu link navigates and closes menu', await mp.evaluate("document.querySelector('.lx-menu-btn').getAttribute('aria-expanded')")=='false' and await mp.evaluate('document.activeElement.id')=='lx-how-h')
     # sign in link target
     await pg.goto(URL); await pg.wait_for_timeout(800); await pg.click('.lx-hero a:has-text("Sign in")'); await pg.wait_for_timeout(500)
-    rec('hero Sign in opens sign-in flow', (await pg.evaluate('location.hash'))=='#/signin', await pg.evaluate('location.hash'))
+    rec('hero Sign in opens the arrival (lamp) screen', (await pg.evaluate('location.hash'))=='#/enter', await pg.evaluate('location.hash'))
     rec('no page errors', not errs, str(errs[:2]))
     print(f'{sum(R)}/{len(R)} passed'); await b.close()
 asyncio.run(main())

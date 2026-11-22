@@ -11,6 +11,7 @@ description: >-
 
 > **Revision history**
 > - v1 (2026-11-20): Renamed from `officer-handoff`. MavNext name and brass/ivory palette; resume banner, demo-overwrite confirmation, character counters, aria states, pilot documentation.
+> - v5 (2026-11-22): pull-cord sign-in (js/auth-scene.js + js/views-auth.js), password rules in js/password.js mirror Supabase (12+, lower/upper/digit/symbol), Google via Supabase OAuth.
 > - v4 (2026-11-21): Noto Sans (self-hosted) replaces Inter; UTA heading weights; cinematic landing with GSAP/ScrollTrigger/Lenis (vendored); docs/uta-requirements.md is the reference for brand decisions.
 > - v3 (2026-11-21): Supabase connected; email+password accounts with consent; onboarding (request to join / invitation / create); migration 002; security center. Rule: any schema change ships as a numbered migration AND in schema.sql, with tests in tests/rls_test*.py.
 > - v2 (2026-11-20): Product expanded from one anonymous form to an organization workspace (meetings, tasks, handoffs, members, archive). The rule against a backend is **replaced**: shared accounts use Supabase with row-level security, off until configured. Blue/orange palette restored per the owner's brief. Storage split into isolated keys; the v1 draft key is read-only. Lessons from verification recorded in §12.
@@ -123,3 +124,13 @@ Primary `#0064B1`, navy text `#142638`, orange accent `#F58025` (**never for tex
 - Photos come only from `assets/photos/` with a permission record. Never use generated people presented as UTA students, or another campus labeled as UTA.
 - Fonts opened from `file://` are blocked unless embedded (data URIs). Don't switch back to plain font files without keeping that fallback.
 - ScrollTrigger `once: true` triggers remove themselves; count triggers on a fresh load when testing for duplicates.
+
+## 15. Sign-in rules (Iteration 6)
+
+- `#/signin`, `#/signup`, `#/forgot` and `#/check-email` are one view (`js/views-auth.js`). Switch modes in place with `history.replaceState`; never re-render, because that loses typed values.
+- The lamp (`js/auth-scene.js`) is decorative. Hidden form = `inert` + `visibility:hidden`. Any failure must fall back to the lit scene with the form visible. Reduced motion = lit immediately.
+- Once lit, the lamp stays lit for the page visit (`MN.AuthView.state.lit`). Never replay the entrance.
+- Password rules live only in `js/password.js` `POLICY` and must match Supabase → Sign In / Providers → Email. Supabase is the authority; the meter is advice.
+- Concentric corners: `--ap-r = --ap-in + --ap-pad`. Nested controls subtract their inset (tabs 4 px, eye button 4 px).
+- Google: `signInWithOAuth` with `redirectTo` = this page. Never put the Google client secret in the repo (Supabase dashboard only). It can't start from `file://`.
+- Sign-up collects name, email and password only. The profile (graduation term, major, consent) is created at `#/profile-setup` on first sign-in, the same for Google.

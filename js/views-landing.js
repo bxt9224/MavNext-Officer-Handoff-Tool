@@ -93,7 +93,7 @@
               <ul id="lx-menu" class="lx-menu">
                 <li><a href="#lx-product" data-action="lxGo" data-target="lx-product">Product</a></li>
                 <li><a href="#lx-how" data-action="lxGo" data-target="lx-how">How it works</a></li>
-                <li><a href="#/signin">Sign in</a></li>
+                <li><a href="#/enter">Sign in</a></li>
                 <li><button type="button" class="lx-btn lx-btn-primary lx-btn-sm" data-action="enterDemo">Explore demo</button></li>
               </ul>
             </nav>
@@ -111,12 +111,10 @@
                 <p class="lx-lede" data-hero-reveal>Organize meetings, document responsibilities, and give your next board a clear place to start.</p>
                 <div class="lx-actions" data-hero-reveal>
                   <button type="button" class="lx-btn lx-btn-light" data-action="enterDemo">Explore demo</button>
-                  <a class="lx-btn lx-btn-ghost" href="#/signin">Sign in</a>
+                  <a class="lx-btn lx-btn-ghost" href="#/enter">Sign in</a>
                 </div>
-                ${legacy ? html`<p class="lx-legacy" data-hero-reveal>A handoff draft from the earlier MavNext${legacy.data && legacy.data.meta && legacy.data.meta.orgName ? html` (${legacy.data.meta.orgName})` : ''} is saved in this browser. ${hasLocal ? html`<a href="#/" data-action="enterLocal">Open your device workspace</a> to import it.` : html`<a href="#/local-setup">Import a copy</a>.`}</p>` : ''}
               </div>
             </div>
-            <button type="button" class="lx-cue" data-action="lxGo" data-target="lx-band" aria-label="Scroll to the next section"><span>Scroll</span><span class="lx-cue-line" aria-hidden="true"></span></button>
           </section>
 
           <section class="lx-band" id="lx-band" aria-label="Student organizations at work">
@@ -156,7 +154,7 @@
               <h2 id="lx-final-h" data-reveal>Give the next board a stronger start.</h2>
               <div class="lx-actions lx-center" data-reveal>
                 <button type="button" class="lx-btn lx-btn-light" data-action="enterDemo">Explore demo</button>
-                <a class="lx-btn lx-btn-ghost" href="#/signin">Sign in</a>
+                <a class="lx-btn lx-btn-ghost" href="#/enter">Sign in</a>
               </div>
             </div>
           </section>
@@ -171,7 +169,7 @@
             </div>
             <nav aria-label="Footer"><ul class="lx-footer-links">
               <li><a href="#/privacy">Privacy notice</a></li>
-              <li><a href="#/signin">Sign in</a></li>
+              <li><a href="#/enter">Sign in</a></li>
               <li><a href="#/" data-action="enterDemo">Explore demo</a></li>
               <li><a href="#/" data-action="enterLocal">${hasLocal ? 'Open this device\'s workspace' : 'Use without an account'}</a></li>
             </ul></nav>

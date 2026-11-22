@@ -1,5 +1,52 @@
 # MavNext — Functional Tests
 
+## Iteration 7: lamp arrival + registration page (2026-11-22)
+
+Chromium (Playwright) with an in-browser stand-in for Supabase; `tests/signin_lamp.py` has 56 checks. Measured:
+- Lamp off at arrival: lit layer, beam and glow all at opacity 0.
+- Exact copy. Header contains only the logo and "Back to home".
+- Hidden form is `inert` and out of the Tab order. The ring has a ≥ 44 px target.
+- A 25 px pull springs back, and so does a cancelled pull. A full drag is capped at 69.6 px and works when released off the ring.
+- The transition settles in about 0.86 s with the URL changing to `#/signin`. The lamp's box is identical before and after.
+- The beam covers the direction from the shade to the email field. Light layers have `pointer-events: none` and sit behind the card.
+- Pulling again keeps typed values.
+- Show/hide password works. Validation errors don't move the card.
+- "Forgot password?" works in place, and the reset is requested.
+- "Create an account" opens the registration page, with no lamp.
+- Registration: validation, live rules and strength, Show/Hide, suggested password, confirm mismatch, sign-up stores the profile with consent, "Check your email", resend.
+- Back to sign-in has no intro. Unconfirmed, wrong-password, and successful sign-ins all behave as before.
+- "Go straight to sign in" clicked 4×, and the ring clicked twice, each produce one transition. Enter, Space, touch pull and tap also work.
+- "Back to home" mid-transition works. Browser Back/Forward leave no hidden form. Direct `#/signin` has no animation.
+- Reduced motion works.
+- Google: off → message; on → OAuth to this page.
+- `file://` works.
+- If the lamp script fails, the form still works.
+- Without Supabase config, the demo still works.
+- A narrow window shows the form with no sideways scroll.
+
+Not verified: real Supabase email delivery or Google sign-in, Safari, Firefox, screen readers, and phones (desktop-first by request).
+
+## Iteration 6: pull-cord sign-in (2026-11-22)
+
+Automated in Chromium (Playwright) with an in-browser stand-in for Supabase (`tests/signin_lamp.py`, 44 checks; `tests/accounts_mock.py`, 30 checks). Not run against the live Supabase project, so no real emails were sent.
+
+| Area | Checked |
+|---|---|
+| Lamp off | Form hidden **and** `inert`; Tab order is skip link → logo → home → ring → skip control; the ring is named "Turn on lamp and open sign in" with a 48 px target; the cord, ring and hint don't overlap the text |
+| Gestures | 18 px pull springs back; cancelled pointer springs back; long drag capped at 69.8 px and works when released off the ring; click; tap; touch drag (CDP touch events); Enter; Space; skip (instant, heading focused) |
+| Reveal | About 1.0 s from release to settled (measured 995 ms); intro removed; panel heading becomes the page `h1` and is focused (not a field, so the phone keyboard doesn't open); light layers stay below the panel |
+| After reveal | Pulling again keeps typed email and password and doesn't replay the entrance; returning to `#/signup` in the same visit stays lit |
+| Tabs | Values kept; height eases and then clears; URL updates without re-rendering; arrow keys; `autocomplete` switches between current-password and new-password |
+| Validation | Email required and well-formed; password required; sign-up name; Supabase rules (12+, case, number, symbol) with specific messages; "Password123!" meets the rules but is rated Weak |
+| Password tools | Show/hide (type, `aria-pressed`, label); suggestion meets every rule, is shown, and is rated Very strong; pasting works |
+| Flows | Sign-up → "Check your email" (no profile yet) → resend → back keeps email → unconfirmed error with resend → wrong password → sign-in → "Finish setting up" with name prefilled → consent saved → onboarding; forgot password in place (email kept, reset requested); reset page enforces the same rules; Settings change password requires the current password |
+| Google | Provider off → explains, no redirect; provider on → `signInWithOAuth({provider:'google'})` returning to this page; `file://` → explains it needs the online site |
+| Fallbacks | Reduced motion (lit and usable at once, zero animations); scene script blocked → form still usable; no Supabase config → "Accounts aren't set up here" and the labeled demo opens; `file://` loads fonts and works |
+| Layout | No sideways scroll at 360, 390, 820, 1280, 1440, 1920 px; panel never overlaps the lamp or ring; on a phone with the keyboard open (390×500), the focused password field stays in view |
+| Regression | `tests/functional.py` 23/23, `tests/landing_test.py` 6 modes clean, `tests/landing_keyboard.py` 10/10 |
+
+Not verified: real Supabase email delivery, real Google sign-in (the provider is off), Safari/Firefox, and screen readers (only automated checks were run).
+
 ## Iteration 4: accounts, joining, security (2026-11-21)
 
 All results are from automated runs on 2026-11-21. Nothing here is from human user testing.

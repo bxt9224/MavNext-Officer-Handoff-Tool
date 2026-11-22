@@ -291,3 +291,37 @@ The owner supplied 9 images: 6 UTA photographs (permission granted by UTA, per t
 - why section: two AI images, unlabeled by the owner's choice
 
 To keep hero text at AA contrast on the real photo, I strengthened the overlay (with an extra setting for 861–1080 px) and made the hero text solid white. Details and the remaining caveat are in `assets/photos/README.md` and `docs/uta-requirements.md` (R3).
+
+---
+
+# Iteration 6: Pull-cord sign-in (2026-11-22)
+
+## What changed
+- **One sign-in panel** (`js/views-auth.js`) for `#/signin`, `#/signup`, `#/forgot`, `#/check-email`. It has "Sign in" and "Create account" tabs, a "Continue with Google" button, then the email form with one primary button. Switching tabs, opening "Forgot password?", and the "Check your email" step all happen in place: typed values stay, and the card height eases to fit.
+- **Lamp scene** (`js/auth-scene.js`, original SVG): a deep-blue room, one slim desk lamp on the left, a thin cord with an orange ring. Drag the ring down (mouse or finger, ~70 px max with soft resistance), or click, tap, press Enter or Space, to turn the lamp on. The light comes on, a soft beam reaches toward the panel (stopping at the desk), the intro fades, and the panel rises 10 px into place in about 0.9 s. Short pulls and cancelled gestures spring back. Pulling again later only tugs the cord. "Skip animation and sign in" opens the same form at once. Reduced motion shows the lit scene and form immediately. If the scene script fails, the form still appears.
+- **Passwords** (`js/password.js`): rules mirror the project's Supabase settings (12+ characters with lowercase, uppercase, a digit and a symbol). There is a live strength meter (Weak / Fair / Strong / Very strong, which also flags common words and your own name or email) and a requirement checklist. "Suggest a strong password" fills in an 18-character random password (crypto-random, shown so it can be saved). The same field is used on the reset-password page; Settings → Change password now asks for the current password, because the project requires it.
+- **Google**: `MN.Remote.signInWithGoogle()` uses Supabase OAuth (PKCE) and returns to the same page. The provider is still **off** in Supabase, and the button says so; setup steps are in `docs/backend-setup.md`. From `file://` the button explains that Google needs the online site.
+- **Sign-up is shorter.** Graduation term, major and privacy consent moved to a "Finish setting up" step on first sign-in, which Google sign-ups go through too. The profile is created only after consent, as before.
+- **Corners are concentric:** card radius = field radius (8 px) + card padding (28 px desktop, 20 px phone). The tabs track uses 8 px, its tabs 4 px; the show/hide button inside a field uses 4 px.
+
+## Problems found and fixed
+- The light beam ran through the desk. It now sits in a wrapper clipped at the desk top.
+- Portrait tablets showed a half-empty room. The composition now centres, and the desk extends from the lamp base.
+- The phone "lamp off" screen had a large empty area. It now centres the lamp and intro.
+- The placeholder text (4.49:1) and input borders (1.6:1) were too faint. Both were darkened, to 4.8:1 and 3.1:1.
+- A stale "password reset requested" flag could force the reset screen after a normal or Google sign-in. Both now clear it.
+
+---
+
+# Iteration 7: Lamp arrival + lavender surfaces (2026-11-22)
+
+## What changed
+- **Arrival (`#/enter`).** White header (logo, "Back to home"). Hero on a brand-blue → deep-blue background: "Keep your club’s next chapter bright.", a lavender "Go straight to sign in" button, and a realistic matte-white desk lamp on the right, switched off, with an ivory cord, an orange ring, and "Pull to enter your workspace". The landing page's "Sign in" links now open this screen.
+- **One transition.** Pulling the ring past 40 px (travel capped near 72 px), clicking or tapping it, pressing Enter or Space, or clicking "Go straight to sign in" all run the same sequence. The cord settles, the bulb and shade interior fade up, a soft white beam reaches down-left toward the fields, the hero copy fades, and the lavender card rises 10 px. It takes about 0.86 s, and the URL becomes `#/signin`. The lamp's base and arms never move.
+- **Sign-in card (`#/signin`):** "Welcome Back Maverick", email, password with an eye toggle, "Forgot password?" (switches the card in place), a blue "Sign in" button with a thin orange bottom edge, and "New here? Create an account". Opening `#/signin` directly shows the usable form at once.
+- **Registration (`#/signup`), no lamp.** Laid out like the owner's screenshot (full name, expected graduation, major, email, password with Show, confirm password, privacy consent), plus "Continue with Google" and live password rules (strength meter, requirement checklist, suggested strong password). A blue hero panel beside it has a short handoff-checklist animation that runs once. Graduation term and consent are collected here again, so email sign-ups skip the "Finish setting up" step; Google sign-ups still see it.
+- **Lavender `#E9E8F8`** is now the app-wide background token (`--bg`): workspace canvas, landing bands, hovers, the arrival button, and the sign-in card. Headers stay white.
+- **Lamp asset.** Two transparent layers cut from the supplied mockups; see `assets/lamp/README.md`.
+
+## Checks
+`tests/signin_lamp.py` 56/56; `tests/accounts_mock.py` 28/28; `tests/functional.py` 23/23; `tests/landing_keyboard.py` 10/10; landing visual test in 6 modes clean.

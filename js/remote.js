@@ -10,12 +10,14 @@
   const CONSENT_VERSION = '2026-11-21';
   const IDLE_LIMIT_MS = 60 * 60 * 1000; // sign out after 60 minutes without activity
   const RESET_FLAG = 'mavnext.pendingReset';
+  const CONFIRMED_FLAG = 'mavnext.emailConfirmed';
   const cfg = () => window.MAVNEXT_CONFIG || {};
   let client = null;
   let user = null;
   let profile = null;
   let recovery = false;
   let lastActivity = Date.now();
+  let providerCache = null;
 
   const TABLE = { meetings: 'meetings', tasks: 'tasks', handoffs: 'handoffs' };
   // Email links can't open a local file, so from file:// we let Supabase use the project's Site URL.
@@ -84,11 +86,19 @@
 
   function friendly(err) {
     const m = (err && err.message) || String(err || '');
+    const code = (err && err.code) || '';
+    if (code === 'weak_password' || /weak password|password should|password is known to be weak/i.test(m)) {
+      const reasons = (err && err.reasons) || [];
+      if (reasons.includes('pwned')) return 'This password has appeared in a known data breach. Choose a different one.';
+      return `Choose a stronger password. ${MN.Password ? MN.Password.ruleText() : ''}`.trim();
+    }
     if (/invalid login credentials/i.test(m)) return 'Email or password is incorrect.';
     if (/email not confirmed/i.test(m)) return 'Confirm your email first — open the confirmation link we sent you.';
+    if (/provider is not enabled|unsupported provider/i.test(m)) return 'Google sign-in isn\'t turned on for MavNext yet. Use your email and password for now.';
     if (/rate limit|too many/i.test(m)) return 'Too many attempts. Wait a few minutes and try again. (The free email service sends only a few emails per hour.)';
     if (/not authorized/i.test(m)) return 'This email address can\'t receive MavNext emails yet. The project owner must add it to the Supabase team or connect a custom email service.';
-    if (/password should be|weak password|at least/i.test(m)) return 'Choose a stronger password: at least 10 characters with letters and numbers.';
+    if (/signups not allowed|signup is disabled/i.test(m)) return 'New accounts are switched off right now. Ask the project owner.';
+    if (/current password required|current_password/i.test(m)) return 'Your current password is incorrect.';
     if (/same password|different from the old/i.test(m)) return 'The new password must be different from your current one.';
     if (/failed to fetch|network/i.test(m)) return 'Could not reach the server. Check your connection.';
     return m || 'Something went wrong. Please try again.';
@@ -121,6 +131,15 @@
       const { data } = await client.auth.getSession();
       user = data.session ? data.session.user : null;
       const fromLink = location.search.includes('code=');
+      let resetPending = false; try { resetPending = !!localStorage.getItem(RESET_FLAG); } catch (e) { /* ignore */ }
+      // A signup confirmation link signs the new account in. Show a confirmed notice on the sign-in page instead.
+      if (fromLink && user && !recovery && !resetPending && user.app_metadata && user.app_metadata.provider === 'email') {
+        await client.auth.signOut().catch(() => {});
+        user = null;
+        try { localStorage.setItem(CONFIRMED_FLAG, '1'); } catch (e) { /* ignore */ }
+        history.replaceState(null, '', location.pathname + '#/signin');
+        return { fromLink: false };
+      }
       if (fromLink) history.replaceState(null, '', location.pathname + (location.hash || '#/'));
       try { if (user && localStorage.getItem(RESET_FLAG)) recovery = true; } catch (e) { /* ignore */ }
       const sess = MN.Session.get();
@@ -133,26 +152,46 @@
     async signUp(input) {
       const { data, error } = await client.auth.signUp({
         email: input.email, password: input.password,
-        options: { emailRedirectTo: redirectUrl(), data: { full_name: input.fullName, grad_term: input.gradTerm || '', major: input.major || '', consent_version: CONSENT_VERSION } }
+        options: { emailRedirectTo: redirectUrl(), data: Object.assign({ full_name: input.fullName }, input.consent ? { grad_term: input.gradTerm || '', major: input.major || '', consent_version: CONSENT_VERSION } : {}) }
       });
-      if (error) throw new Error(friendly(error));
+      if (error) { const e = new Error(friendly(error)); e.weak = error.code === 'weak_password'; throw e; }
       if (data.session) { user = data.session.user; MN.Session.set({ mode: 'remote' }); return { signedIn: true }; }
       return { signedIn: false };
     },
     async signIn(email, password) {
+      try { localStorage.removeItem(RESET_FLAG); } catch (e) { /* ignore */ }
       const { data, error } = await client.auth.signInWithPassword({ email, password });
       if (error) { const e = new Error(friendly(error)); e.unconfirmed = /not confirmed/i.test(error.message); throw e; }
       user = data.user; lastActivity = Date.now();
       MN.Session.set({ mode: 'remote' });
     },
+    /** Google sign-in (OAuth with PKCE). Leaves the page; Supabase returns to this address with ?code=. */
+    async signInWithGoogle() {
+      if (!client) await MN.Remote.init();
+      try { localStorage.removeItem(RESET_FLAG); } catch (e) { /* ignore */ }
+      const { error } = await client.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectUrl(), queryParams: { prompt: 'select_account' } } });
+      if (error) throw new Error(friendly(error));
+    },
+    /** Whether an external provider is switched on in Supabase (public settings endpoint). null if unknown. */
+    providerEnabled(name) {
+      if (!providerCache) {
+        providerCache = fetch(`${cfg().supabaseUrl.replace(/\/$/, '')}/auth/v1/settings`, { headers: { apikey: cfg().supabaseAnonKey } })
+          .then((r) => (r.ok ? r.json() : null)).then((j) => j && j.external ? j.external : null).catch(() => null);
+      }
+      return providerCache.then((ext) => (ext && name in ext ? !!ext[name] : null));
+    },
+    userMeta: () => (user && user.user_metadata) || {},
     resendConfirmation: (email) => client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: redirectUrl() } }).then(({ error }) => { if (error) throw new Error(friendly(error)); }),
     sendPasswordReset(email) {
       try { localStorage.setItem(RESET_FLAG, '1'); } catch (e) { /* ignore */ }
       return client.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() }).then(({ error }) => { if (error) throw new Error(friendly(error)); });
     },
-    async updatePassword(password) {
-      const { error } = await client.auth.updateUser({ password });
-      if (error) throw new Error(friendly(error));
+    /** currentPassword: required by this project's Supabase setting for normal password changes;
+        not needed after a reset link (Supabase exempts recovery sessions). */
+    async updatePassword(password, currentPassword) {
+      const attrs = currentPassword ? { password, current_password: currentPassword } : { password };
+      const { error } = await client.auth.updateUser(attrs);
+      if (error) { const e = new Error(friendly(error)); e.weak = error.code === 'weak_password'; throw e; }
       recovery = false;
       try { localStorage.removeItem(RESET_FLAG); } catch (e) { /* ignore */ }
     },

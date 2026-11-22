@@ -50,6 +50,7 @@
     const [a, b, c] = parts;
     switch (a) {
       case undefined: case '': return { view: 'entry' };
+      case 'enter': return { view: 'enter' };
       case 'signin': return { view: 'signin' };
       case 'signup': return { view: 'signup' };
       case 'local-setup': return { view: 'localSetup' };
@@ -79,7 +80,7 @@
       default: return { view: 'notFound' };
     }
   }
-  const PUBLIC_VIEWS = ['entry', 'signin', 'signup', 'localSetup', 'invite', 'checkEmail', 'forgot', 'privacy'];
+  const PUBLIC_VIEWS = ['entry', 'enter', 'signin', 'signup', 'localSetup', 'invite', 'checkEmail', 'forgot', 'privacy'];
   // Full-page views that need a signed-in account but no organization.
   const BARE_VIEWS = ['welcome', 'profileSetup', 'resetPassword'];
 
@@ -111,6 +112,8 @@
     if (MN.Store.ws) return Promise.resolve(true);
     const sess = MN.Session.get();
     if (!sess) return Promise.resolve(false);
+    // Opened from disk, a saved demo or local copy is not reopened automatically; start at the landing page.
+    if (location.protocol === 'file:' && (sess.mode === 'demo' || sess.mode === 'local')) { MN.Session.end(); return Promise.resolve(false); }
     if (sess.mode === 'demo') { MN.openDemo(); return Promise.resolve(true); }
     if (sess.mode === 'local') { if (MN.openLocal()) return Promise.resolve(true); MN.Session.end(); return Promise.resolve(false); }
     if (sess.mode === 'remote' && MN.Remote && MN.Remote.configured()) {
@@ -205,7 +208,7 @@
       const redirect = (h) => { history.replaceState(null, '', h); return MN.render({ nav: true, initial: opts && opts.initial }); };
       if (MN.Remote.inRecovery() && target.view !== 'resetPassword') return redirect('#/reset-password');
       if (!MN.Remote.inRecovery() && !MN.Remote.profile() && !['profileSetup', 'privacy'].includes(target.view)) return redirect('#/profile-setup');
-      if (['signin', 'signup', 'checkEmail', 'forgot'].includes(target.view)) return redirect('#/overview');
+      if (['enter', 'signin', 'signup', 'checkEmail', 'forgot'].includes(target.view)) return redirect('#/overview');
       if (!PUBLIC_VIEWS.includes(target.view) && !BARE_VIEWS.includes(target.view) && !MN.ctx().org) return redirect('#/welcome');
     } else if (BARE_VIEWS.includes(target.view)) { history.replaceState(null, '', '#/'); return MN.render({ nav: true }); }
 

@@ -9,7 +9,7 @@
   --navy: #142638;
   --orange: #F58025;
   --orange-tint: #FEF1E7;
-  --bg: #F6F8FB;
+  --bg: #E9E8F8;            /* MavNext soft lavender white (custom surface, not a UTA brand colour) */
   --panel: #FFFFFF;
   --muted: #526176;
   --border: #DCE3EC;
@@ -28,6 +28,16 @@
   --uta-web-orange: #C45517; /* secondary: web text only */
   /* UTA web typeface guidance: Noto Sans, Verdana fallback */
   --font: "Noto Sans", Verdana, sans-serif;
+
+  /* MavNext arrival / sign-in tokens */
+  --brand-blue: #0064B1;
+  --deep-blue: #003865;
+  --brand-orange: #F58025;
+  --surface-lavender: #E9E8F8;
+  --surface-white: #FFFFFF;
+  --text-primary: #003865;
+  --text-secondary: #475569;
+  --input-border: #94A3B8;
   --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 40px; --s8: 48px;
   --r-sm: 6px; --r: 8px; --r-lg: 12px;
   --sidebar-w: 240px;
@@ -504,7 +514,7 @@ table.list tr:last-child td { border-bottom: 0; }
 .lx-defs dd { margin: 0; color: #3A4B5F; font-size: 16px; line-height: 1.6; }
 
 /* How it works: one coherent product scene */
-.lx-how { background: var(--bg); border-top: 1px solid var(--border); }
+.lx-how { background: #fff; border-top: 1px solid var(--border); }
 .lx-how-head { max-width: 760px; margin-bottom: 56px; }
 .lx-how-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 56px; align-items: start; }
 .lx-moments { list-style: none; margin: 0; padding: 0; }
@@ -609,3 +619,300 @@ table.list tr:last-child td { border-bottom: 0; }
   .lx-btn, .lx-moments li { transition: none; }
 }
 @media print { .lx-header { position: static; } .lx-hero, .lx-final { color: #000; background: #fff; } }
+
+/* =========================================================================
+   Arrival + sign-in (js/auth-scene.js, js/views-auth.js)
+   One scene, three states: arrival (lamp off) → transitioning → signin (lamp on).
+   The lamp never moves; only the cord, the lit layer and the light change.
+   ========================================================================= */
+.au, .rg { min-height: 100vh; display: flex; flex-direction: column; font-family: var(--font); }
+.au [hidden], .rg [hidden] { display: none !important; }
+.au-header { position: relative; z-index: 5; flex: none; height: 72px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(24px, 5.3vw, 88px); background: #fff; border-bottom: 1px solid var(--border, #DDE3EA); }
+.au-logo { display: block; line-height: 0; }
+.au-logo img { width: 196px; height: auto; }
+.au-home { font-size: 16px; font-weight: 600; color: var(--text-primary); text-decoration: none; padding: 10px 2px; border-radius: 4px; }
+.au-home:hover { color: var(--brand-blue); text-decoration: underline; text-underline-offset: 4px; }
+.au-home:focus-visible, .au-logo:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 4px; }
+
+.au {
+  position: relative;
+  /* form column: 460-500 px, 32 px padding, centred in the stage; lamp anchored to the right */
+  /* the form is never larger than the lamp: at most 80% of the shade's width and 95% of the lamp's height */
+  --card-w: min(clamp(440px, 29vw, 480px), calc(var(--lamp-w) * .8));
+  --card-h: min(524px, calc(var(--lamp-h) * .95));
+  --card-x: clamp(60px, 14vw, 240px);
+  --lamp-r: clamp(24px, 5.2vw, 96px);
+  --desk-h: clamp(88px, 13vh, 132px);
+  --stage-h: max(600px, calc(100vh - 72px));
+  /* lamp height: fits between the header and the desk, never taller than the art supports */
+  --lamp-h: min(880px, calc((var(--stage-h) - var(--desk-h) - 20px) / 0.944));
+  --lamp-w: calc(var(--lamp-h) * 726 / 835);
+  background: var(--deep-blue); color: #fff;
+  /* shade opening, in stage coordinates: the lamp box is right-anchored, the opening sits 134/726 across and 253/835 down */
+  --apex-x: calc(100vw - var(--lamp-r) - var(--lamp-w) * 592 / 726);
+  --apex-y: calc(var(--stage-h) - var(--desk-h) + var(--lamp-h) * 0.0563 - var(--lamp-h) * 582 / 835);
+  /* beam floor: the card's lower edge, so the light never reaches the desk */
+  /* the form sits 40 px below the stage centre, but never onto the desk (see .au-left padding). The beam runs from the shade across the
+     whole card and stops at the card's bottom edge, so the light never reaches the desk */
+  /* the card's bottom edge sits level with the lamp base; its top edge falls near the bulb */
+  --beam-mid: max(calc(var(--card-h) / 2), calc(var(--stage-h) - var(--desk-h) + var(--lamp-h) * .039 - var(--card-h) / 2));
+  --beam-floor: calc(var(--beam-mid) + var(--card-h) / 2);
+}
+.au-stage { position: relative; isolation: isolate; overflow: hidden; outline: none; flex: 1; min-height: var(--stage-h);
+  background: linear-gradient(90deg, var(--brand-blue) 0%, var(--deep-blue) 100%); }
+.au-desk { position: absolute; left: 0; right: 0; bottom: 0; height: var(--desk-h); z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .10) 0, rgba(255, 255, 255, .04) 2px, rgba(255, 255, 255, 0) 60%),
+              linear-gradient(90deg, var(--brand-blue) 0%, var(--deep-blue) 100%);
+  box-shadow: 0 -1px 0 rgba(0, 20, 50, .18); }
+
+/* ---- left column: hero copy and the sign-in card share one place ---- */
+.au-left { position: absolute; top: 0; bottom: 0; left: var(--card-x); z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; width: var(--card-w); padding-top: max(0px, calc(2 * (var(--beam-mid) - var(--stage-h) / 2))); padding-bottom: max(0px, calc(2 * (var(--stage-h) / 2 - var(--beam-mid)))); }
+.au-copy, .au-card-wrap { grid-area: 1 / 1; }
+.au-copy { align-self: center; justify-self: start; width: min(680px, 46vw); }
+.au-eyebrow { margin: 0 0 20px; font-size: 16px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #fff; }
+.au-headline { margin: 0 0 22px; font-size: clamp(40px, 3.9vw, 62px); font-weight: 800; line-height: 1.1; letter-spacing: -.015em; color: #fff; outline: none; max-width: 640px; }
+.au-hl-2 { display: block; }
+.au-lede { margin: 0 0 36px; font-size: clamp(18px, 1.5vw, 22px); line-height: 1.5; color: #fff; max-width: 34ch; }
+
+/* buttons: thin orange bottom edge is the only decoration */
+.au-btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; height: 56px; padding: 0 28px; border: 0; border-radius: 10px; cursor: pointer;
+  font: 700 18px/1 var(--font); text-decoration: none; transition: background-color .15s ease, transform .15s ease; }
+.au-btn .au-arrow { flex: none; transition: transform .15s ease; }
+.au-btn:hover .au-arrow { transform: translateX(3px); }
+.au-btn-lav { background: var(--surface-lavender); color: var(--text-primary); box-shadow: inset 0 -3px 0 var(--brand-orange), 0 10px 24px -12px rgba(0, 20, 50, .55); }
+.au-btn-lav:hover { filter: brightness(.97); }
+.au-btn-lav:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.au-btn-primary { width: 100%; background: var(--brand-blue); color: #fff; box-shadow: none; }
+.au-btn-primary:hover { filter: brightness(1.1); }
+.au-btn-primary:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 3px; }
+.au-btn-primary:disabled { opacity: .8; cursor: progress; }
+.au-btn-quiet { width: 100%; margin-top: 12px; background: var(--surface-white); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--input-border); }
+
+/* ---- sign-in card ---- */
+.au-card-wrap { align-self: center; }
+.au-card { position: relative; overflow: hidden; background: var(--surface-white); color: var(--text-primary); border-top: 4px solid var(--brand-orange);
+  border-radius: 16px; padding: 28px 36px; min-height: var(--card-h); display: flex; flex-direction: column; justify-content: center;
+  box-shadow: 0 28px 60px -24px rgba(0, 18, 48, .55), 0 2px 6px rgba(0, 18, 48, .18); }
+.au-card > * { position: relative; z-index: 3; }
+/* the lamp's light sits behind the card, so the form stays a plain white surface */
+.au-card::before { display: none; }
+/* the lamp's light landing on the card: brightest at the top-right, nearest the shade */
+.au-card::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(70% 60% at 100% 14%, rgba(255, 255, 255, .95), rgba(255, 255, 255, .4) 55%, rgba(255, 255, 255, 0) 85%); }
+.au-title { margin: 0; font-size: clamp(26px, 2.1vw, 32px); font-weight: 800; line-height: 1.15; letter-spacing: -.01em; color: var(--text-primary); outline: none; white-space: nowrap; }
+.au-sub { margin: 6px 0 14px; font-size: 17px; line-height: 1.5; color: var(--text-primary); }
+.au-form .ap-field { margin-bottom: 10px; }
+.au-forgot-row { display: flex; justify-content: flex-end; margin: -6px 0 14px; }
+.au-alt { margin: 14px 0 0; text-align: center; font-size: 16px; color: var(--text-primary); }
+.au-alt a, .rg-foot a { color: var(--brand-blue); font-weight: 600; text-decoration: none; }
+.au-alt a:hover, .rg-foot a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.au-back { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 16px -4px; padding: 6px 4px; border: 0; background: none; cursor: pointer; font: 600 15px var(--font); color: var(--brand-blue); border-radius: 4px; }
+.au-back:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* shared field pieces (sign-in card, reset password, registration) */
+.ap-field { margin-bottom: 16px; }
+.ap-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.ap-label { display: block; font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.ap-field > .ap-label { margin-bottom: 8px; }
+.ap-input { display: block; width: 100%; height: 52px; padding: 0 16px; background: var(--surface-white); color: var(--text-primary);
+  border: 1px solid var(--input-border); border-radius: 8px; font: 400 17px var(--font); transition: border-color .15s ease, box-shadow .15s ease; }
+.ap-input { font-family: var(--font); }
+.ap-input::placeholder { color: var(--text-secondary); font-family: var(--font); font-weight: 400; opacity: 1; }
+.ap-input:hover { border-color: var(--text-secondary); }
+.ap-input:focus { outline: none; border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(0, 100, 177, .25); }
+.ap-input[aria-invalid="true"] { border-color: var(--red); }
+.ap-pw { position: relative; }
+.ap-pw .ap-input { padding-right: 56px; }
+.ap-eye { position: absolute; top: 5px; right: 5px; bottom: 5px; width: 44px; padding: 0; border: 0; background: transparent; cursor: pointer;
+  border-radius: 6px; color: var(--text-secondary); display: grid; place-items: center; }
+.ap-eye:hover { background: #F1F5F9; color: var(--text-primary); }
+.ap-eye:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: -2px; }
+.ap-eye .ap-eye-shut { display: none; }
+.ap-eye.is-shown .ap-eye-shut { display: inline; }
+.ap-eye.is-shown .ap-eye-open { display: none; }
+.ap-pw-text { display: flex; gap: 10px; }
+.ap-pw-text .ap-input { padding-right: 16px; flex: 1; min-width: 0; }
+.ap-show { flex: none; min-width: 94px; height: 52px; padding: 0 18px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--surface-white);
+  font: 600 16px var(--font); color: var(--text-primary); cursor: pointer; }
+.ap-show:hover { background: #F1F5F9; }
+.ap-show:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
+.ap-err { margin: 6px 0 0; font-size: 14px; line-height: 1.4; color: var(--red); }
+.ap-link { padding: 0; border: 0; background: none; cursor: pointer; font: 600 15px var(--font); color: var(--brand-blue); text-decoration: none; border-radius: 2px; }
+.ap-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ap-link:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
+.ap-status:empty { display: none; }
+.ap-status { margin: 0 0 16px; }
+.ap-status .notice { font-size: 14.5px; line-height: 1.45; }
+.ap-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+.ap-spinner { display: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .45); border-top-color: #fff; animation: ap-spin .8s linear infinite; }
+[aria-busy="true"] .ap-spinner { display: block; }
+[aria-busy="true"] .au-arrow { display: none; }
+@keyframes ap-spin { to { transform: rotate(360deg); } }
+/* strength meter + rules */
+.ap-meter { margin-top: 10px; }
+.ap-meter[hidden] { display: none; }
+.ap-meter-top { display: flex; align-items: center; gap: 12px; }
+.ap-meter-bar { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.ap-meter-bar span { height: 6px; border-radius: 3px; background: #E2E8F0; transition: background-color .2s ease; }
+.ap-meter-label { min-width: 84px; text-align: right; font-size: 14px; font-weight: 600; }
+.ap-meter[data-score="1"] .ap-meter-bar span:nth-child(-n+1),
+.ap-meter[data-score="2"] .ap-meter-bar span:nth-child(-n+2),
+.ap-meter[data-score="3"] .ap-meter-bar span:nth-child(-n+3),
+.ap-meter[data-score="4"] .ap-meter-bar span { background: currentColor; }
+.ap-meter[data-tone="weak"] { color: var(--red); }
+.ap-meter[data-tone="fair"] { color: var(--amber-text); }
+.ap-meter[data-tone="strong"] { color: var(--green); }
+.ap-reqs { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: 14px; color: var(--text-secondary); }
+.ap-reqs li { display: flex; align-items: center; gap: 8px; }
+.ap-req-icon { width: 16px; height: 16px; flex: none; border-radius: 50%; border: 1.5px solid var(--input-border); position: relative; background: #fff; }
+.ap-reqs li[data-ok="true"] { color: var(--green); }
+.ap-reqs li[data-ok="true"] .ap-req-icon { border-color: var(--green); background: var(--green); }
+.ap-reqs li[data-ok="true"] .ap-req-icon::after { content: ""; position: absolute; left: 4.5px; top: 2px; width: 3.5px; height: 7px; border: solid #fff; border-width: 0 1.6px 1.6px 0; transform: rotate(45deg); }
+.ap-suggested[hidden] { display: none; }
+.ap-suggested { margin: 10px 0 0; font-size: 14px; line-height: 1.45; color: var(--text-secondary); }
+/* plain card content (reset password, finish profile) */
+.ap-plain .ap-title, .ap-plain h1 { margin: 0; font-size: clamp(28px, 2.4vw, 36px); font-weight: 800; line-height: 1.15; color: var(--text-primary); outline: none; }
+.ap-plain .ap-sub { margin: 10px 0 24px; font-size: 16px; line-height: 1.5; color: var(--text-secondary); }
+.ap-plain .ap-head { margin: 0; }
+.ap-plain .ap-submit { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 56px; margin-top: 8px; border: 0; border-radius: 10px; cursor: pointer;
+  background: var(--brand-blue); color: #fff; font: 700 18px var(--font); box-shadow: inset 0 -3px 0 var(--brand-orange); }
+.ap-plain .ap-submit:hover { filter: brightness(1.1); }
+.ap-plain .ap-submit:focus-visible { outline: 3px solid var(--brand-blue); outline-offset: 3px; }
+.ap-plain .field label { color: var(--text-primary); }
+.ap-plain .input, .ap-plain .select { height: 52px; border-radius: 8px; font-size: 16px; border-color: var(--input-border); background: #fff; }
+.ap-plain .check { font-size: 15px; line-height: 1.5; color: var(--text-primary); }
+.ap-plain .ap-foot { margin: 16px 0 0; text-align: center; }
+
+/* ---- lamp ---- */
+.lp { position: absolute; z-index: 2; right: clamp(24px, 5.2vw, 96px); bottom: calc(var(--desk-h) - var(--lamp-h) * 0.0563);
+  width: var(--lamp-w); height: var(--lamp-h); --pull: 0px; }
+.lp-img { position: absolute; inset: 0; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; pointer-events: none; }
+.lp-lit { opacity: 0; }
+/* light: everything here is decoration and never takes pointer input */
+.lp-bloom { position: absolute; pointer-events: none; }
+/* the beam: a wedge from the shade opening (apex) across the card, under its text.
+   The beam box is stage-sized and offset to the stage origin, so its coordinates are stage coordinates. */
+.au-beam { position: absolute; z-index: 0; top: 0; left: calc(var(--card-x) * -1); width: 100vw; height: var(--stage-h); pointer-events: none; opacity: 0; filter: blur(14px); }
+/* clipped wedge: from the shade opening, widening to cover the full form, ending at the card's bottom edge */
+.au-beam-in { position: absolute; inset: 0;
+  clip-path: polygon(var(--apex-x) var(--apex-y), calc(var(--card-x) - 120px) calc(var(--beam-mid) - 640px), calc(var(--card-x) - 120px) var(--beam-floor), calc(var(--card-x) + var(--card-w) + 40px) var(--beam-floor));
+  background:
+    radial-gradient(ellipse 1200px 860px at var(--apex-x) var(--apex-y), rgba(255, 250, 242, .55) 0%, rgba(255, 226, 196, .26) 28%, rgba(245, 128, 37, .22) 54%, rgba(245, 128, 37, .1) 80%, rgba(245, 128, 37, 0) 100%); }
+.lp-bloom { left: var(--open-x); top: var(--open-y); width: calc(var(--lamp-w) * .62); height: calc(var(--lamp-w) * .5); transform: translate(-58%, -46%) rotate(-30deg);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .55), rgba(255, 255, 255, .18) 45%, rgba(255, 255, 255, 0)); opacity: 0; filter: blur(6px); }
+/* cord + ring: live elements, pulled independently of the lamp */
+.lp-cord { position: absolute; z-index: 1; left: var(--cord-x); top: var(--cord-top); pointer-events: none;
+  width: calc(var(--lamp-h) * 5 / 835); min-width: 3px; transform: translateX(-50%);
+  height: calc(var(--ring-cy) - var(--cord-top) - var(--lamp-h) * var(--ring-d) * .42 + var(--pull));
+  background: linear-gradient(90deg, #D8D2C2 0%, #FFFDF6 45%, #CFC7B4 100%);
+  border-radius: 2px; box-shadow: 1px 0 2px rgba(0, 20, 50, .25); }
+.lp-ring { position: absolute; z-index: 2; left: var(--cord-x); top: var(--ring-cy);
+  width: max(56px, calc(var(--lamp-h) * var(--ring-d) + 16px)); aspect-ratio: 1; transform: translate(-50%, -50%) translateY(var(--pull));
+  display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; cursor: grab; touch-action: none; -webkit-tap-highlight-color: transparent; }
+.lp-ring-shape { width: calc(var(--lamp-h) * var(--ring-d)); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, #FFC08F 0%, #F58025 32%, #E26C14 62%, #C9590C 100%);
+  -webkit-mask: radial-gradient(circle closest-side, transparent calc(100% - var(--lamp-h) * 9 / 835), #000 calc(100% - var(--lamp-h) * 9 / 835 + 1px));
+  mask: radial-gradient(circle closest-side, transparent calc(100% - var(--lamp-h) * 9 / 835), #000 calc(100% - var(--lamp-h) * 9 / 835 + 1px));
+  filter: drop-shadow(0 3px 4px rgba(0, 18, 48, .35)); transition: transform .2s ease; }
+.lp-ring:hover .lp-ring-shape { transform: translateY(2px); }
+.lp-ring:focus { outline: none; }
+.lp-ring:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.lp.is-dragging .lp-ring { cursor: grabbing; }
+.lp.is-springing .lp-cord { transition: height .42s cubic-bezier(.34, 1.4, .6, 1); }
+.lp.is-springing .lp-ring { transition: transform .42s cubic-bezier(.34, 1.4, .6, 1); }
+.lp-hint { position: absolute; z-index: 1; left: var(--cord-x); top: calc(var(--ring-cy) + var(--lamp-h) * var(--ring-d) * .5 + 18px); transform: translateX(-50%);
+  margin: 0; width: 190px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; pointer-events: none;
+  font-size: 17px; font-weight: 600; line-height: 1.3; color: #fff; transition: opacity .2s ease; }
+
+/* ---- states ---- */
+.au[data-state="arrival"] .au-card-wrap { visibility: hidden; opacity: 0; }
+.au[data-state="transitioning"] .au-copy, .au[data-state="signin"] .au-copy { opacity: 0; transform: translateY(-8px); visibility: hidden;
+  transition: opacity .26s ease, transform .26s ease, visibility 0s .26s; }
+.au[data-state="transitioning"] .au-card-wrap { animation: au-card-in .4s cubic-bezier(.2, .7, .2, 1) .12s both; }
+@keyframes au-card-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.au:not([data-state="arrival"]) .lp-lit { opacity: 1; }
+.au:not([data-state="arrival"]) .au-beam { opacity: 1; }
+.au:not([data-state="arrival"]) .lp-bloom { opacity: 1; }
+.au:not([data-state="arrival"]) .lp-hint { opacity: 0; visibility: hidden; }
+.au:not([data-state="arrival"]) .lp-ring { cursor: default; }
+.au[data-state="transitioning"] .lp-lit, .au[data-state="transitioning"] .lp-bloom { transition: opacity .5s cubic-bezier(.4, 0, .2, 1) .12s; }
+.au[data-state="transitioning"] .au-beam { transition: opacity .62s cubic-bezier(.4, 0, .2, 1) .18s; }
+.au.is-static .au-card-wrap { animation: none; }
+.au.is-static .lp-lit, .au.is-static .au-beam, .au.is-static .lp-bloom, .au.is-static .au-copy { transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .au *, .au *::before { transition: none !important; animation: none !important; }
+}
+
+/* =========================================================================
+   Registration page (no lamp)
+   ========================================================================= */
+.rg { position: relative; isolation: isolate; color: var(--text-primary); background: var(--deep-blue) url("assets/photos/college-park.jpg") center / cover no-repeat; }
+.rg::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0, 56, 101, .30) 0%, rgba(0, 40, 80, .58) 100%); }
+.rg-main { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; padding: 48px 16px 64px; outline: none; }
+.rg-card { width: min(860px, 100%); background: var(--surface-white); border-top: 4px solid var(--brand-orange); border-radius: 16px; padding: 36px clamp(28px, 4vw, 44px) 32px; box-shadow: 0 30px 70px -28px rgba(0, 18, 48, .6), 0 2px 6px rgba(0, 18, 48, .18); }
+.rg-card > .rg-title, .rg-card > .rg-sub, .rg-card > .rg-foot { text-align: center; }
+.rg-card > .rg-title { font-size: clamp(28px, 2.6vw, 34px); }
+.rg-card > .rg-sub { margin: 10px 0 22px; font-size: 17px; font-weight: 500; color: var(--text-primary); }
+.rg-card .rg-google { background: var(--surface-white); border: 1px solid var(--input-border); color: var(--text-primary); font-weight: 700; }
+.rg-card .rg-google:hover { background: var(--surface-white); filter: brightness(.98); }
+.rg-card .rg-or { color: var(--text-primary); margin: 20px 0; }
+.rg-card .rg-or::before, .rg-card .rg-or::after { background: #9C98C9; }
+.rg-card .rg-form .input, .rg-card .rg-form .select { background: var(--surface-white); }
+.rg-card .rg-foot { margin-top: 16px; }
+.rg-card .rg-submit { margin-top: 14px; }
+.rg-back { display: inline-flex; align-items: center; gap: 4px; margin: 0 0 12px -4px; padding: 4px; font-size: 16px; font-weight: 600; color: var(--brand-blue); text-decoration: none; border-radius: 4px; }
+.rg-back:hover { text-decoration: underline; text-underline-offset: 3px; }
+.rg-title { margin: 0; font-size: clamp(28px, 2.4vw, 36px); font-weight: 800; line-height: 1.15; color: var(--text-primary); outline: none; }
+.rg-sub { margin: 12px 0 24px; font-size: 17px; line-height: 1.55; color: var(--text-secondary); }
+.rg-notice { margin-bottom: 20px; }
+.rg-google { width: 100%; height: 52px; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer;
+  background: var(--surface-white); border: 1px solid var(--input-border); border-radius: 8px; font: 600 16px var(--font); color: var(--text-primary); }
+.rg-google:hover { background: #F6F7FD; border-color: #64748B; }
+.rg-google:focus-visible { outline: 2px solid var(--brand-blue); outline-offset: 2px; }
+.rg-google:disabled { opacity: .7; cursor: progress; }
+[data-google-scope] .ap-status { margin: 12px 0 0; }
+.rg-or { display: flex; align-items: center; gap: 14px; margin: 24px 0; font-size: 14px; color: var(--text-secondary); }
+.rg-or::before, .rg-or::after { content: ""; flex: 1; height: 1px; background: #E2E8F0; }
+.rg-form .field { margin-bottom: 18px; }
+.rg-form .field > label, .rg-form .ap-label { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.rg-form .input, .rg-form .select { height: 52px; border-radius: 8px; border-color: var(--input-border); font-size: 17px; color: var(--text-primary); }
+.rg-form .input:focus, .rg-form .select:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(0, 100, 177, .22); outline: none; }
+.rg-form .hint { display: block; margin-top: 8px; font-size: 14px; color: var(--text-secondary); }
+.rg-form .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.rg-form .check { font-size: 16px; line-height: 1.6; color: var(--text-primary); }
+.rg-form .req { color: #B42318; }
+.rg-form .ap-field { margin-bottom: 18px; }
+.rg-submit { margin-top: 10px; }
+.rg-foot { margin: 18px 0 0; font-size: 16px; color: var(--text-secondary); }
+
+/* Built for desktop. Narrower windows keep everything usable: the lamp shrinks, then steps aside. */
+/* narrower laptops: the lamp scales down and the card moves in, so the shade never covers the form */
+@media (max-width: 1200px) {
+  .au { --lamp-h: min(680px, calc((var(--stage-h) - var(--desk-h) - 20px) / 0.944)); --card-x: clamp(40px, 9vw, 160px); }
+}
+@media (max-width: 1100px) {
+  .au { --lamp-h: min(560px, calc((var(--stage-h) - var(--desk-h) - 20px) / 0.944)); }
+}
+@media (max-width: 760px) {
+  .lp { display: none; }
+  .au-left { position: relative; top: auto; bottom: auto; left: auto; width: auto; margin: 0 16px; padding: 32px 0; display: block; }
+  .au-beam { display: none; }
+  .au[data-state="arrival"] .au-card-wrap { visibility: visible; opacity: 1; }
+  .au-copy { display: none; }
+  .rg-form .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Shorter form on narrower screens, where the lamp (and so the card) is shorter. Keeps the card still when validation appears. */
+@media (max-width: 1200px) {
+  .au-card { padding: 20px 28px; }
+  .au-title { font-size: 28px; }
+  .au-sub { margin: 6px 0 14px; }
+  .au-form .ap-field { margin-bottom: 10px; }
+  .au-forgot-row { margin: -6px 0 16px; }
+}
+
+/* hide the browser's own password reveal icon so only the MavNext eye button shows */
+input[type="password"]::-ms-reveal, input[type="password"]::-ms-clear { display: none !important; }
+input[type="password"]::-webkit-credentials-auto-fill-button, input[type="password"]::-webkit-contacts-auto-fill-button { display: none !important; visibility: hidden; }
+input[type="password"]::-webkit-textfield-decoration-container { display: none !important; }

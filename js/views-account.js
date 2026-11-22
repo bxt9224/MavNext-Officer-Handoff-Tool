@@ -46,60 +46,10 @@
     return e;
   }
 
-  // Password rules mirror the Supabase setting (min 10, letters + digits).
-  function passwordScore(pw) {
-    let s = 0;
-    if (pw.length >= 10) s += 1;
-    if (pw.length >= 14) s += 1;
-    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s += 1;
-    if (/\d/.test(pw)) s += 1;
-    if (/[^A-Za-z0-9]/.test(pw)) s += 1;
-    return s;
-  }
-  function passwordProblem(pw, email) {
-    if (pw.length < 10) return 'Use at least 10 characters.';
-    if (!/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'Include both letters and numbers.';
-    if (email && pw.toLowerCase().includes(email.split('@')[0].toLowerCase())) return 'Don\'t include your email name in the password.';
-    if (/^(password|mavnext|qwerty|123456|letmein)/i.test(pw)) return 'That password is too common.';
-    return '';
-  }
-  const passwordFields = (label) => html`
-    <div class="field"><label for="pw-new">${label || 'Password'} <span class="req" aria-hidden="true">*</span></label>
-      <div style="display:flex;gap:8px"><input class="input" id="pw-new" type="password" name="password" autocomplete="new-password" minlength="10" required aria-describedby="pw-hint pw-meter" data-input="pwMeter">
-        <button type="button" class="btn" data-action="togglePw" aria-controls="pw-new" aria-pressed="false">Show</button></div>
-      <div class="progress" style="height:6px;margin-top:6px" aria-hidden="true"><span id="pw-bar" style="width:0%"></span></div>
-      <span class="hint" id="pw-hint">At least 10 characters, with letters and numbers. A short phrase works well.</span>
-      <span class="hint" id="pw-meter" aria-live="polite"></span>
-      <p class="field-error" data-err-for="password" hidden></p></div>
-    <div class="field"><label for="pw-confirm">Confirm password <span class="req" aria-hidden="true">*</span></label><input class="input" id="pw-confirm" type="password" name="confirm" autocomplete="new-password" required><p class="field-error" data-err-for="confirm" hidden></p></div>`;
-  MN.inputs.pwMeter = (el) => {
-    const s = passwordScore(el.value);
-    const labels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very strong'];
-    const bar = document.getElementById('pw-bar');
-    if (bar) { bar.style.width = `${(s / 5) * 100}%`; bar.style.background = s <= 1 ? 'var(--red)' : s <= 2 ? 'var(--amber-text)' : 'var(--green)'; }
-    const m = document.getElementById('pw-meter'); if (m) m.textContent = el.value ? `Strength: ${labels[s]}` : '';
-  };
-  MN.actions.togglePw = (el) => {
-    const on = el.getAttribute('aria-pressed') !== 'true';
-    document.querySelectorAll('#pw-new, #pw-confirm, #si-pw').forEach((i) => { i.type = on ? 'text' : 'password'; });
-    el.setAttribute('aria-pressed', String(on)); el.textContent = on ? 'Hide' : 'Show';
-  };
+  MN.profileFields = profileFields;
+  MN.consentField = consentField;
+  MN.profileErrors = profileErrors;
 
-  function accountsUnavailable(title) {
-    return page(html`${back('#/')}<h1 tabindex="-1" data-page-title>${title}</h1>
-      <div class="notice notice-warn" style="margin:16px 0">${icon('info')}<div><strong>Accounts are not set up on this deployment yet.</strong><br>Shared sign-in needs a database connection that the project owner has not configured. No account details are collected here.</div></div>
-      <p class="muted small" style="margin-bottom:16px">Until then you can explore the demo, or keep your own records in this browser.</p>
-      <div class="btn-row"><button class="btn btn-primary" data-action="enterDemo">Explore demo</button><button class="btn" data-action="enterLocal">Use on this device</button></div>`);
-  }
-  function fileWarning(kind) {
-    if (location.protocol !== 'file:') return '';
-    const msg = kind === 'signup'
-      ? 'The confirmation email link opens the online MavNext site. Confirm there, then come back to this window and sign in.'
-      : kind === 'forgot'
-        ? 'Password reset links open the online MavNext site. Finish choosing your new password there, then sign in here.'
-        : '';
-    return msg ? html`<div class="notice notice-info" style="margin-bottom:16px">${icon('info')}<div>${msg}</div></div>` : '';
-  }
   const status = () => html`<div role="status" aria-live="polite" data-status style="margin-top:12px"></div>`;
   function setStatus(kind, msg) {
     const st = document.querySelector('[data-status]');
@@ -108,142 +58,54 @@
   function busy(form, on, label) {
     const b = form.querySelector('button[type="submit"]');
     if (!b) return;
-    if (on) { b.dataset.label = b.textContent; b.textContent = label || 'Working…'; b.disabled = true; } else { b.textContent = b.dataset.label || b.textContent; b.disabled = false; }
+    const t = b.querySelector('.ap-submit-label') || b;
+    form.setAttribute('aria-busy', String(on));
+    if (on) { b.dataset.label = t.textContent; t.textContent = label || 'Working…'; b.disabled = true; } else { t.textContent = b.dataset.label || t.textContent; b.disabled = false; }
+  }
+  function accountsUnavailable(title) {
+    return page(html`${back('#/')}<h1 tabindex="-1" data-page-title>${title}</h1>
+      <div class="notice notice-warn" style="margin:16px 0">${icon('info')}<div><strong>Accounts are not set up on this deployment yet.</strong><br>Shared sign-in needs a database connection that the project owner has not configured. No account details are collected here.</div></div>
+      <div class="btn-row"><button class="btn btn-primary" data-action="enterDemo">Explore demo</button><button class="btn" data-action="enterLocal">Use on this device</button></div>`);
   }
 
-  // ---------- sign up ----------
-  MN.views.signup = {
-    title: 'Create account',
-    render() {
-      if (!remoteOn()) return accountsUnavailable('Create account');
-      return page(html`${back('#/')}<h1 tabindex="-1" data-page-title>Create your officer account</h1>
-        <p class="muted" style="margin:4px 0 20px">One account per person. After signing up you can create your organization's workspace, accept an invitation, or request to join.</p>
-        ${fileWarning('signup')}
-        <form data-form="signUp" novalidate>
-          ${profileFields(null)}
-          <div class="field"><label for="su-email">Email <span class="req" aria-hidden="true">*</span></label><input class="input" id="su-email" type="email" name="email" autocomplete="email" required><span class="hint">Use the email your club knows you by — invitations are matched to it.</span><p class="field-error" data-err-for="email" hidden></p></div>
-          ${passwordFields()}
-          ${consentField()}
-          <button class="btn btn-primary" type="submit" style="margin-top:16px;width:100%">Create account</button>
-          <p class="small muted" style="margin-top:12px">Already have an account? <a href="#/signin">Sign in</a></p>
-        </form>${status()}`, true);
-    }
-  };
-  MN.forms.signUp = (form) => {
-    const d = MN.formData(form);
-    const errs = profileErrors(d);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email || '')) errs.email = 'Enter a valid email address.';
-    const pp = passwordProblem(d.password || '', d.email);
-    if (pp) errs.password = pp;
-    else if (d.password !== d.confirm) errs.confirm = 'Passwords don\'t match.';
-    if (!MN.showErrors(form, errs)) return;
-    busy(form, true, 'Creating account…'); setStatus('', '');
-    return R().signUp({ email: d.email.trim().toLowerCase(), password: d.password, fullName: d.fullName.trim(), gradTerm: d.gradTerm, major: d.major.trim() })
-      .then((r) => {
-        if (r.signedIn) return R().restore().then(() => MN.go('#/welcome'));
-        MN.go(`#/check-email?e=${encodeURIComponent(d.email.trim().toLowerCase())}`);
-        return null;
-      }, (err) => { busy(form, false); setStatus('danger', err.message); });
-  };
-  MN.views.checkEmail = {
-    title: 'Check your email',
-    render(p) {
-      const e = p.q.e || '';
-      return page(html`<h1 tabindex="-1" data-page-title>Confirm your email</h1>
-        <p style="margin:12px 0">If <strong>${e}</strong> can be used for a new account, we sent it a confirmation link.</p>
-        <ol class="small" style="padding-left:18px;margin:0 0 16px;line-height:1.7"><li>Open the email from Supabase (check spam).</li><li>Click <strong>Confirm your mail</strong>. It may open the online MavNext site — that's fine.</li><li>Come back here and sign in with your email and password.</li></ol>
-        <div class="btn-row"><a class="btn btn-primary" href="#/signin?e=${encodeURIComponent(e)}">Go to sign in</a><button class="btn" data-action="resendConfirm" data-email="${e}">Resend email</button></div>
-        <p class="hint" style="margin-top:12px">Already have an account with this email? Sign in instead, or reset your password.</p>${status()}`);
-    }
-  };
-  MN.actions.resendConfirm = (el) => {
-    el.disabled = true;
-    R().resendConfirmation(el.dataset.email).then(() => setStatus('ok', 'If the account still needs confirming, a new email is on its way.'), (err) => setStatus('danger', err.message)).then(() => { setTimeout(() => { el.disabled = false; }, 30000); });
-  };
-
-  // ---------- sign in ----------
-  MN.views.signin = {
-    title: 'Sign in',
-    render(p) {
-      if (!remoteOn()) return accountsUnavailable('Sign in');
-      return page(html`${back('#/')}<h1 tabindex="-1" data-page-title>Sign in</h1>
-        <p class="muted" style="margin:4px 0 20px">Officer accounts only. New here? <a href="#/signup">Create an account</a>.</p>
-        <form data-form="signIn" novalidate>
-          <div class="field"><label for="si-email">Email</label><input class="input" id="si-email" type="email" name="email" autocomplete="email" value="${p.q.e || ''}" required><p class="field-error" data-err-for="email" hidden></p></div>
-          <div class="field"><label for="si-pw">Password</label>
-            <div style="display:flex;gap:8px"><input class="input" id="si-pw" type="password" name="password" autocomplete="current-password" required><button type="button" class="btn" data-action="togglePw" aria-controls="si-pw" aria-pressed="false">Show</button></div>
-            <p class="field-error" data-err-for="password" hidden></p></div>
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" type="submit">Sign in</button><a href="#/forgot" class="small">Forgot password?</a></div>
-        </form>${status()}`);
-    }
-  };
-  let failedSignIns = 0;
-  MN.forms.signIn = (form) => {
-    const d = MN.formData(form);
-    const errs = {};
-    if (!d.email) errs.email = 'Enter your email.';
-    if (!d.password) errs.password = 'Enter your password.';
-    if (!MN.showErrors(form, errs)) return;
-    busy(form, true, 'Signing in…'); setStatus('', '');
-    return R().signIn(d.email.trim().toLowerCase(), d.password)
-      .then(() => { failedSignIns = 0; return R().restore(); })
-      .then(() => {
-        let pending = null; try { pending = localStorage.getItem(PENDING_INVITE); } catch (e) { /* ignore */ }
-        MN.go(pending ? `#/invite/${pending}` : '#/overview');
-      }, (err) => {
-        busy(form, false); failedSignIns += 1;
-        // Slow down repeated guesses in this tab; Supabase also rate-limits on the server.
-        if (failedSignIns >= 3) { const b = form.querySelector('button[type="submit"]'); b.disabled = true; setTimeout(() => { b.disabled = false; }, Math.min(30000, 5000 * (failedSignIns - 2))); }
-        const st = document.querySelector('[data-status]');
-        st.innerHTML = String(html`<div class="notice notice-danger">${icon('alert')}<div>${err.message}${err.unconfirmed ? html`<br><button class="btn btn-sm" style="margin-top:8px" data-action="resendConfirm" data-email="${d.email.trim().toLowerCase()}">Resend confirmation email</button>` : ''}</div></div>`);
-      });
-  };
-
-  // ---------- password reset ----------
-  MN.views.forgot = {
-    title: 'Reset password',
-    render() {
-      if (!remoteOn()) return accountsUnavailable('Reset password');
-      return page(html`${back('#/signin', 'Back to sign in')}<h1 tabindex="-1" data-page-title>Reset your password</h1>
-        <p class="muted" style="margin:4px 0 20px">We'll email a reset link. Open it in this same browser.</p>
-        ${fileWarning('forgot')}
-        <form data-form="forgot" novalidate><div class="field"><label for="fg-email">Email</label><input class="input" id="fg-email" type="email" name="email" autocomplete="email" required><p class="field-error" data-err-for="email" hidden></p></div>
-        <button class="btn btn-primary" type="submit">Send reset link</button></form>${status()}`);
-    }
-  };
-  MN.forms.forgot = (form) => {
-    const d = MN.formData(form);
-    if (!MN.showErrors(form, /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email || '') ? {} : { email: 'Enter a valid email address.' })) return;
-    busy(form, true, 'Sending…');
-    return R().sendPasswordReset(d.email.trim().toLowerCase()).then(() => { busy(form, false); setStatus('ok', 'If an account exists for that email, a reset link is on its way. Open it in this browser.'); },
-      (err) => { busy(form, false); setStatus('danger', err.message); });
-  };
   MN.views.resetPassword = {
     title: 'Choose a new password', bare: true,
     render() {
-      return page(html`<h1 tabindex="-1" data-page-title>Choose a new password</h1>
-        <p class="muted" style="margin:4px 0 20px">Signed in as ${R().userEmail()}.</p>
-        <form data-form="resetPassword" novalidate>${passwordFields('New password')}<button class="btn btn-primary" type="submit">Save new password</button></form>${status()}`);
+      return MN.authShell(html`<header class="ap-head"><h1 class="ap-title" id="ap-title" tabindex="-1" data-page-title>Choose a new password</h1>
+          <p class="ap-sub">Signed in as ${R().userEmail()} from your reset link.</p></header>
+        <form data-form="resetPassword" novalidate>
+          <input type="email" name="username" autocomplete="username" value="${R().userEmail()}" hidden>
+          ${MN.passwordField({ id: 'rp-pw', label: 'New password', meter: true, autocomplete: 'new-password' })}
+          <div class="ap-status" role="status" aria-live="polite" data-status></div>
+          <button class="ap-submit" type="submit"><span class="ap-spinner" aria-hidden="true"></span><span class="ap-submit-label">Save new password</span></button>
+        </form>`);
+    },
+    mount() {
+      const root = document.getElementById('auth-panel');
+      const stop = root ? MN.bindPasswordFields(root, () => ({ email: R().userEmail() })) : null;
+      MN.onLeave = () => { if (stop) stop(); };
     }
   };
   MN.forms.resetPassword = (form) => {
     const d = MN.formData(form);
-    const errs = {};
-    const pp = passwordProblem(d.password || '', R().userEmail());
-    if (pp) errs.password = pp; else if (d.password !== d.confirm) errs.confirm = 'Passwords don\'t match.';
-    if (!MN.showErrors(form, errs)) return;
+    const pp = MN.Password.problem(d.password || '', { email: R().userEmail() });
+    if (!MN.showErrors(form, pp ? { password: pp } : {})) return;
     busy(form, true, 'Saving…');
     return R().updatePassword(d.password).then(() => { MN.toast('Password updated.'); MN.go('#/overview'); }, (err) => { busy(form, false); setStatus('danger', err.message); });
   };
 
   // ---------- profile completion (accounts created before profiles existed) ----------
   MN.views.profileSetup = {
-    title: 'Complete your profile', bare: true,
+    title: 'Finish setting up', bare: true,
     render() {
-      return page(html`<h1 tabindex="-1" data-page-title>Complete your profile</h1>
-        <p class="muted" style="margin:4px 0 20px">Signed in as ${R().userEmail()}. We need a few details before you continue.</p>
-        <form data-form="profileSetup" novalidate>${profileFields(R().profile())}${consentField()}<button class="btn btn-primary" type="submit" style="margin-top:16px">Continue</button></form>${status()}
-        <p class="small" style="margin-top:16px"><button class="btn btn-ghost btn-sm" data-action="signOut">Sign out</button></p>`, true);
+      const meta = R().userMeta ? R().userMeta() : {};
+      const p = R().profile() || { full_name: meta.full_name || meta.name || '' };
+      return MN.authShell(html`<header class="ap-head"><h1 class="ap-title" id="ap-title" tabindex="-1" data-page-title>Finish setting up</h1>
+          <p class="ap-sub">Signed in as ${R().userEmail()}. A few details, then you're in.</p></header>
+        <form data-form="profileSetup" class="ap-plain-form" novalidate>${profileFields(p)}${consentField()}
+          <div data-status role="status" aria-live="polite"></div>
+          <button class="ap-submit" type="submit"><span class="ap-spinner" aria-hidden="true"></span><span class="ap-submit-label">Continue</span></button></form>
+        <p class="ap-foot"><button type="button" class="ap-link" data-action="signOut">Sign out</button></p>`, { wide: true });
     }
   };
   MN.forms.profileSetup = (form) => {
