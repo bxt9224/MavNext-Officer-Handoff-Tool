@@ -65,7 +65,7 @@
   function accountsUnavailable(title) {
     return page(html`${back('#/')}<h1 tabindex="-1" data-page-title>${title}</h1>
       <div class="notice notice-warn" style="margin:16px 0">${icon('info')}<div><strong>Accounts are not set up on this deployment yet.</strong><br>Shared sign-in needs a database connection that the project owner has not configured. No account details are collected here.</div></div>
-      <div class="btn-row"><button class="btn btn-primary" data-action="enterDemo">Explore demo</button><button class="btn" data-action="enterLocal">Use on this device</button></div>`);
+      <div class="btn-row"><button class="btn btn-primary" data-action="enterDemo">Explore demo</button></div>`);
   }
 
   MN.views.resetPassword = {

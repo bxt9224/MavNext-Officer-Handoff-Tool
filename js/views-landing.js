@@ -171,7 +171,7 @@
               <li><a href="#/privacy">Privacy notice</a></li>
               <li><a href="#/enter">Sign in</a></li>
               <li><a href="#/" data-action="enterDemo">Explore demo</a></li>
-              <li><a href="#/" data-action="enterLocal">${hasLocal ? 'Open this device\'s workspace' : 'Use without an account'}</a></li>
+              ${hasLocal ? html`<li><a href="#/" data-action="enterLocal">Open this device's workspace</a></li>` : ''}
             </ul></nav>
           </div>
         </footer>

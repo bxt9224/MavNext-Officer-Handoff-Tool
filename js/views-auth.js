@@ -132,8 +132,7 @@
     <${MN.raw(H)} class="au-title" id="au-title" tabindex="-1">Accounts aren't set up here</${MN.raw(H)}>
     <p class="au-sub">This copy of MavNext isn't connected to a sign-in service, so no account details are collected.</p>
     <p class="ap-note">You can still explore MavNext with fictional demo data, or keep your own records in this browser only.</p>
-    <button type="button" class="au-btn au-btn-primary" data-action="enterDemo"><span class="ap-submit-label">Explore the demo</span></button>
-    <button type="button" class="au-btn au-btn-quiet" data-action="enterLocal">Use on this device only</button>`;
+    <button type="button" class="au-btn au-btn-primary" data-action="enterDemo"><span class="ap-submit-label">Explore the demo</span></button>`;
 
   // ---------- arrival + sign-in scene ----------
   function card(H, mode) {
