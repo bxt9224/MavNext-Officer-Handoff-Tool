@@ -187,7 +187,7 @@
       return html`
         ${ui.pageHead('Settings', `${o.name}`)}
         <div class="stack" style="max-width:860px">
-          <section class="panel"><div class="panel-head"><h2>Organization</h2></div>
+          <section class="panel"><div class="panel-head"><h2>${icon('building')} Organization</h2></div>
             ${admin ? html`<form data-form="orgSettings" novalidate><div class="panel-body">
               <div class="field"><label for="st-name">Organization name</label><input class="input" id="st-name" name="name" maxlength="120" value="${o.name}"><p class="field-error" data-err-for="name" hidden></p></div>
               <div class="grid-3">
@@ -205,10 +205,13 @@
 
           ${c.mode === 'remote' ? accountPanel(c) : ''}
           ${securityCenter(c)}
-          <section class="panel"><div class="panel-head"><h2>Privacy and storage</h2></div><div class="panel-body">
+          <section class="panel"><div class="panel-head"><h2>${icon('eye')} Privacy &amp; data</h2></div><div class="panel-body">
             <p>${privacy}</p>
-            <p style="margin-top:12px">Do not enter passwords, PINs, recovery codes, private financial records, or account numbers anywhere in MavNext. Access sections describe transfer procedures only.</p>
-            <div class="btn-row" style="margin-top:16px"><button class="btn" data-action="exportWorkspace">${icon('download')}Export ${c.mode === 'demo' ? 'demo ' : ''}records (JSON)</button></div>
+            <p class="hint" style="margin-top:12px"><strong>Important:</strong> Do not enter passwords, PINs, recovery codes, private financial records, or account numbers anywhere in MavNext. Access sections describe transfer procedures only.</p>
+            <div class="btn-row" style="margin-top:20px">
+              <button class="btn" data-action="exportWorkspace">${icon('download')} Export ${c.mode === 'demo' ? 'demo ' : ''}records (JSON)</button>
+              <a class="btn" href="#/privacy" style="text-decoration:none">${icon('file')} View privacy notice</a>
+            </div>
           </div></section>
 
           ${c.mode === 'demo' ? html`<section class="panel"><div class="panel-head"><h2>Demo workspace</h2></div><div class="panel-body">
@@ -220,8 +223,9 @@
             <p>Deleting removes this browser-only workspace: its organization, people, meetings, tasks, handoffs, and versions. Export first if you need a copy.</p>
             <div class="btn-row" style="margin-top:16px"><button class="btn btn-danger-outline" data-action="deleteLocal">${icon('trash')}Delete this browser's workspace</button></div></div></section>` : ''}
 
-          <section class="panel"><div class="panel-head"><h2>About</h2></div><div class="panel-body small muted">
-            MavNext is an independent student-developed pilot for student organization officer transitions. It is not an official University of Texas at Arlington service and is not endorsed by the university. Records are not published.
+          <section class="panel"><div class="panel-head"><h2>${icon('info')} About MavNext</h2></div><div class="panel-body small muted">
+            <p>MavNext is an independent student-developed pilot for student organization officer transitions at the University of Texas at Arlington. It is not an official UTA service and is not endorsed by the university.</p>
+            <p style="margin-top:8px">Records are stored securely and are not published. For questions or support, contact the project team.</p>
           </div></section>
         </div>`;
     }
@@ -229,7 +233,7 @@
   function accountPanel(c) {
     const p = MN.Remote.profile() || {};
     const isLastAdmin = c.me.permission === 'admin' && MN.wouldRemoveLastAdmin(c.org.id, c.me.id, null);
-    return html`<section class="panel" aria-labelledby="acct-h"><div class="panel-head"><h2 id="acct-h">Your account &amp; security</h2></div>
+    return html`<section class="panel" aria-labelledby="acct-h"><div class="panel-head"><h2 id="acct-h">${icon('user')} Your account &amp; security</h2></div>
       <form data-form="profileEdit" novalidate><div class="panel-body">
         <p class="small muted" style="margin-bottom:16px">Signed in as <strong>${MN.Remote.userEmail()}</strong>. Graduation term and major are visible only to you.</p>
         <div class="grid-3">
@@ -262,7 +266,7 @@
       ['Session protection', 'Automatic sign-out after 60 minutes idle; sign out on all devices anytime.'],
       ['Privacy by design', 'Minimal profile data, recorded consent, no ads or trackers, and private profile details.']
     ];
-    return html`<section class="panel" aria-labelledby="sec-h"><div class="panel-head"><h2 id="sec-h">How MavNext protects your club</h2>${ui.badge(c.mode === 'remote' ? 'Active' : 'Shown for reference', c.mode === 'remote' ? 'b-green' : 'b-gray')}</div>
+    return html`<section class="panel" aria-labelledby="sec-h"><div class="panel-head"><h2 id="sec-h">${icon('check')} How MavNext protects your club</h2>${ui.badge(c.mode === 'remote' ? 'Active' : 'Shown for reference', c.mode === 'remote' ? 'b-green' : 'b-gray')}</div>
       <div class="panel-body tight"><ul class="rows">${items.map(([t, d]) => html`<li class="row" style="align-items:flex-start"><span class="sec-state done" aria-hidden="true">${icon('check')}</span><div class="row-main"><strong>${t}</strong><div class="row-meta"><span>${d}</span></div></div></li>`)}</ul>
       ${c.mode !== 'remote' ? html`<p class="hint" style="padding-bottom:12px">${c.mode === 'demo' ? 'In the demo, accounts and approvals are simulated in your browser; these protections apply to signed-in workspaces.' : 'This browser-only workspace has no accounts; these protections apply to signed-in workspaces.'}</p>` : ''}</div></section>`;
   }

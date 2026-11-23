@@ -116,37 +116,111 @@
       (err) => { busy(form, false); setStatus('danger', R().friendly(err)); });
   };
 
-  // ---------- onboarding: create / invitation / request ----------
+  // ---------- onboarding: sidebar-based layout ----------
+  const obNavItem = (key, ico, title, desc, tab) => html`
+    <a class="ob-nav-item${tab === key ? ' ob-nav-item--active' : ''}" href="#/welcome?tab=${key}">
+      <span class="ob-nav-icon">${icon(ico)}</span>
+      <span class="ob-nav-text">
+        <strong>${title}</strong>
+        <span class="ob-nav-desc">${desc}</span>
+      </span>
+    </a>`;
+
   MN.views.welcome = {
-    title: 'Join or create an organization', bare: true,
+    title: 'Set up your workspace', bare: true,
     render(p, c) {
       const prof = R().profile() || {};
+      const firstName = prof.full_name ? prof.full_name.split(' ')[0] : '';
+      const initials = prof.full_name ? prof.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '';
       const tab = ['create', 'invite', 'request'].includes(p.q.tab) ? p.q.tab : 'request';
-      const tabLink = (k, label) => html`<a class="tab" role="tab" href="#/welcome?tab=${k}" aria-selected="${tab === k}">${label}</a>`;
       const hasOrg = c && c.orgs && c.orgs.length;
-      return page(html`
-        ${hasOrg ? back('#/overview', 'Back to my workspace') : ''}
-        <h1 tabindex="-1" data-page-title>Welcome${prof.full_name ? `, ${prof.full_name.split(' ')[0]}` : ''}</h1>
-        <p class="muted" style="margin:4px 0 16px">${hasOrg ? 'Join another organization or start a new one.' : 'You\'re not part of an organization yet. Pick how you\'re joining.'}</p>
-        <div class="tabs" role="tablist" aria-label="How are you joining?" style="padding:0;margin-bottom:20px">${tabLink('request', 'Request to join')}${tabLink('invite', 'I have an invitation')}${tabLink('create', 'Create organization')}</div>
-        ${tab === 'request' ? html`
-          <p class="small muted" style="margin-bottom:12px">Find your organization and ask to join. An administrator must approve you before you can see anything.</p>
-          <form data-form="dirSearch" class="inline-form" style="margin:0 0 12px" role="search"><label for="dir-q" class="sr-only">Search organizations</label><input class="input" id="dir-q" name="q" placeholder="Search organizations" data-input="dirSearch" autocomplete="off"><button class="btn" type="submit">Search</button></form>
-          <div data-dir-results aria-live="polite"><p class="empty-inline">Loading organizations…</p></div>` : ''}
-        ${tab === 'invite' ? html`
-          <p class="small muted" style="margin-bottom:12px">An administrator gives you a link or code. Invitations work once, expire after 7 days, and only for the email they were created for.</p>
-          <form data-form="useInvite" novalidate><div class="field"><label for="iv-code">Invitation link or code</label><input class="input" id="iv-code" name="code" autocomplete="off" placeholder="Paste the link or code"><p class="field-error" data-err-for="code" hidden></p></div><button class="btn btn-primary" type="submit">Continue</button></form>` : ''}
-        ${tab === 'create' ? html`
-          <p class="small muted" style="margin-bottom:12px">You'll become the organization's administrator and can invite your board. Only create a workspace for a club you lead.</p>
-          <form data-form="createOrg" novalidate>
-            <div class="field"><label for="co-name">Organization name <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-name" name="orgName" maxlength="120" placeholder="e.g., Nepalese Student Association"><p class="field-error" data-err-for="orgName" hidden></p></div>
-            <div class="grid-2"><div class="field"><label for="co-title">Your officer title <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-title" name="title" maxlength="60" list="role-list2" placeholder="e.g., President"><datalist id="role-list2">${['President', 'Vice President', 'Treasurer', 'Secretary', 'Faculty Advisor'].map((r) => html`<option value="${r}">`)}</datalist><p class="field-error" data-err-for="title" hidden></p></div>
-            <div class="field"><label for="co-term">Current term</label><input class="input" id="co-term" name="term" maxlength="40" placeholder="e.g., Spring 2027"></div></div>
-            <label class="check"><input type="checkbox" name="confirmLead"> <span>I am an officer of this organization and allowed to set up its workspace.</span></label><p class="field-error" data-err-for="confirmLead" hidden></p>
-            <button class="btn btn-primary" type="submit" style="margin-top:12px">Create workspace</button></form>` : ''}
-        <div data-my-requests style="margin-top:24px"></div>
-        ${status()}
-        <div class="btn-row" style="margin-top:20px">${hasOrg ? html`<a class="btn" href="#/overview">Go to my workspace</a>` : ''}<button class="btn btn-ghost" data-action="signOut">Sign out</button></div>`, true);
+      return html`<div class="ob-wrap">
+        <header class="ob-topbar">
+          <a href="#/" class="ob-logo-link"><img src="assets/mavnext-logo-trimmed.png" alt="MavNext" class="ob-logo"></a>
+          <div class="ob-topbar-right">
+            <a href="#/privacy" class="ob-help-link">${icon('info', 'icon-sm')} Help</a>
+            <button class="ob-user-btn" data-action="signOut" title="Sign out">
+              <span class="ob-avatar">${initials}</span>
+              <span class="ob-user-name">${prof.full_name || R().userEmail() || ''}</span>
+            </button>
+          </div>
+        </header>
+        <div class="ob-body">
+          <aside class="ob-sidebar">
+            <p class="ob-sidebar-label">WORKSPACE SETUP</p>
+            <nav class="ob-sidebar-nav">
+              ${obNavItem('request', 'users', 'Find your organization', 'Search and request to join', tab)}
+              ${obNavItem('invite', 'mail', 'Use an invitation', 'Enter a code from your admin', tab)}
+              ${obNavItem('create', 'building', 'Create a workspace', 'Start a new organization', tab)}
+            </nav>
+            <div class="ob-sidebar-footer">
+              <a href="#/privacy" class="ob-sidebar-link">${icon('info', 'icon-sm')} Contact support</a>
+              <button class="ob-sidebar-link" data-action="signOut">${icon('logout', 'icon-sm')} Sign out</button>
+            </div>
+          </aside>
+          <main class="ob-content">
+            <div class="ob-content-inner">
+              <p class="ob-greeting">Welcome, ${firstName || 'there'}</p>
+              <h1 class="ob-title" tabindex="-1" data-page-title>Set up your workspace</h1>
+              <p class="ob-subtitle">${hasOrg ? 'Join another organization or create a workspace for your team.' : 'Join your student organization or create a workspace for your team.'}</p>
+
+              ${tab === 'request' ? html`
+                <section class="ob-section">
+                  <h2 class="ob-section-heading">Find your organization</h2>
+                  <p class="ob-section-desc">Search by name. An administrator will review your request.</p>
+                  <form data-form="dirSearch" role="search" class="ob-search-form">
+                    <div class="field"><label for="dir-q">Organization name</label>
+                    <div class="ob-search-row">
+                      <span class="ob-search-icon">${icon('search')}</span>
+                      <input class="input ob-search-input" id="dir-q" name="q" placeholder="Search organizations" data-input="dirSearch" autocomplete="off">
+                    </div></div>
+                  </form>
+                  <h3 class="ob-results-heading">Organizations</h3>
+                  <div data-dir-results aria-live="polite" class="ob-results">
+                    <div class="ob-empty-state">
+                      <span class="ob-empty-icon">${icon('building')}</span>
+                      <p class="ob-empty-title">No organizations yet</p>
+                      <p class="small muted">Search above to find your club, or create a new workspace.</p>
+                    </div>
+                  </div>
+                </section>` : ''}
+
+              ${tab === 'invite' ? html`
+                <section class="ob-section">
+                  <h2 class="ob-section-heading">Accept an invitation</h2>
+                  <p class="ob-section-desc">An administrator gives you a link or code. Invitations work once, expire after 7 days, and only for the email they were created for.</p>
+                  <form data-form="useInvite" novalidate>
+                    <div class="field"><label for="iv-code">Invitation link or code</label><input class="input" id="iv-code" name="code" autocomplete="off" placeholder="Paste the link or code"><p class="field-error" data-err-for="code" hidden></p></div>
+                    <button class="btn btn-primary" type="submit">Continue</button>
+                  </form>
+                  <p class="ob-alt-link">Don't have one? <a href="#/welcome?tab=request">Search for your organization instead.</a></p>
+                </section>` : ''}
+
+              ${tab === 'create' ? html`
+                <section class="ob-section">
+                  <h2 class="ob-section-heading">Create a workspace</h2>
+                  <p class="ob-section-desc">You'll be the administrator and can invite your board. Only create a workspace for a club you lead.</p>
+                  <form data-form="createOrg" novalidate>
+                    <div class="field"><label for="co-name">Organization name <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-name" name="orgName" maxlength="120" placeholder="e.g., Nepalese Student Association"><p class="field-error" data-err-for="orgName" hidden></p></div>
+                    <div class="grid-2"><div class="field"><label for="co-title">Your officer title <span class="req" aria-hidden="true">*</span></label><input class="input" id="co-title" name="title" maxlength="60" list="role-list2" placeholder="e.g., President"><datalist id="role-list2">${['President', 'Vice President', 'Treasurer', 'Secretary', 'Faculty Advisor'].map((r) => html`<option value="${r}">`)}</datalist><p class="field-error" data-err-for="title" hidden></p></div>
+                    <div class="field"><label for="co-term">Current term</label><input class="input" id="co-term" name="term" maxlength="40" placeholder="e.g., Spring 2027"></div></div>
+                    <label class="check"><input type="checkbox" name="confirmLead"> <span>I am an officer of this organization and allowed to set up its workspace.</span></label><p class="field-error" data-err-for="confirmLead" hidden></p>
+                    <button class="btn btn-primary" type="submit" style="margin-top:12px">Create workspace</button>
+                  </form>
+                </section>` : ''}
+
+              <div data-my-requests style="margin-top:32px"></div>
+              ${status()}
+              ${hasOrg ? html`<div class="btn-row" style="margin-top:24px"><a class="btn" href="#/overview">${icon('chevronRight', 'icon-sm')} Go to my workspace</a></div>` : ''}
+            </div>
+            <footer class="ob-content-footer">
+              <span>Have an invitation? <a href="#/welcome?tab=invite">Use your code</a></span>
+              <span class="ob-footer-sep">·</span>
+              <a href="#/privacy">Privacy</a>
+            </footer>
+          </main>
+        </div>
+      </div>`;
     },
     mount(root, p) {
       const tab = ['create', 'invite', 'request'].includes(p.q.tab) ? p.q.tab : 'request';
@@ -164,7 +238,7 @@
     R().directory(q).then((rows) => {
       if (!document.contains(box)) return;
       box.innerHTML = String(rows.length ? html`<ul class="rows">${rows.map((o) => html`<li class="row"><div class="row-main"><span class="row-title">${o.name}</span></div>${memberOf.has(o.id) ? ui.badge('Member', 'b-green') : html`<button class="btn btn-sm" data-action="requestJoin" data-id="${o.id}" data-name="${o.name}">Request to join</button>`}</li>`)}</ul>`
-        : html`<p class="empty-inline">${q ? 'No organizations match that search.' : 'No organizations are listed yet.'} You can create one, or use an invitation.</p>`);
+        : html`<div class="ob-empty-state"><span class="ob-empty-icon">${icon('search')}</span><p class="ob-empty-title">${q ? 'No organizations match that search.' : 'Start with your organization’s name.'}</p><p class="small muted">${q ? 'Try a different name, or create a new workspace.' : 'Only organizations using MavNext will appear here.'}</p></div>`);
     }, (err) => { box.innerHTML = String(html`<p class="field-error">${R().friendly(err)}</p>`); });
   }
   function loadMyRequests() {
@@ -242,25 +316,103 @@
   MN.actions.declineInvite = () => { try { localStorage.removeItem(PENDING_INVITE); } catch (e) { /* ignore */ } MN.go(MN.Store.ws ? '#/welcome' : '#/'); };
 
   // ---------- privacy notice ----------
+  const privNavItem = (id, label, activeId) => html`
+    <a class="pv-nav-item${activeId === id ? ' pv-nav-item--active' : ''}" href="#privacy-${id}" data-pv-nav="${id}">${label}</a>`;
+
   MN.views.privacy = {
-    title: 'Privacy notice',
+    title: 'Privacy notice', bare: true,
     render() {
-      return page(html`${back('#/')}<h1 tabindex="-1" data-page-title>Privacy notice</h1>
-        <p class="small muted" style="margin:4px 0 16px">Version ${(MN.Remote && MN.Remote.CONSENT_VERSION) || '2026-11-21'} · MavNext is an independent student pilot, not a UTA service.</p>
-        <div class="small" style="line-height:1.65">
-          <h2 style="font-size:16px;margin:12px 0 4px">What we collect</h2>
-          <p>Your name, email, expected graduation term, optional major, and the records you or your officers create: meetings, tasks, handoffs, and activity. Your password is handled by our sign-in provider and is never visible to MavNext or other users.</p>
-          <h2 style="font-size:16px;margin:12px 0 4px">Why</h2>
-          <p>Only to run your organization's workspace: showing who is on the board, assigning work, and passing responsibilities to the next officer. No advertising, no selling of data, no analytics trackers.</p>
-          <h2 style="font-size:16px;margin:12px 0 4px">Who can see it</h2>
-          <p>Your profile details (graduation term, major) are visible only to you. Your name, email, and officer title are visible to members of organizations you join. Club records are visible only to that organization's members, according to their permission. Database rules enforce this, not just the screen.</p>
-          <h2 style="font-size:16px;margin:12px 0 4px">Where it's stored</h2>
-          <p>In a Supabase database operated for this pilot. Data is sent over encrypted connections. Demo mode and "Use on this device" store data only in your browser.</p>
-          <h2 style="font-size:16px;margin:12px 0 4px">Don't store secrets</h2>
-          <p>Never put passwords, recovery codes, bank or card numbers, or private financial records in MavNext. Handoffs describe procedures, not credentials.</p>
-          <h2 style="font-size:16px;margin:12px 0 4px">Your choices</h2>
-          <p>You can edit your profile, leave an organization, or ask the project team to delete your account and data. Consent is recorded with this notice's version and the time you agreed.</p>
-        </div>`, true);
+      const version = (MN.Remote && MN.Remote.CONSENT_VERSION) || '2026-11-21';
+      return html`<div class="pv-wrap">
+        <header class="pv-topbar">
+          <a href="#/" class="ob-logo-link"><img src="assets/mavnext-logo-trimmed.png" alt="MavNext" class="ob-logo"></a>
+          <a href="#/" class="pv-back-link">${icon('chevronLeft')} Back to workspace</a>
+        </header>
+        <div class="pv-body">
+          <aside class="pv-sidebar">
+            <div class="pv-sidebar-title">Privacy notice</div>
+            <div class="pv-sidebar-label">ON THIS PAGE</div>
+            <nav class="pv-sidebar-nav">
+              ${privNavItem('overview', 'Overview', 'overview')}
+              ${privNavItem('collect', 'What we collect', '')}
+              ${privNavItem('why', 'Why we need it', '')}
+              ${privNavItem('who', 'Who can see it', '')}
+              ${privNavItem('stored', 'Where it is stored', '')}
+              ${privNavItem('choices', 'Your choices', '')}
+            </nav>
+          </aside>
+          <main class="pv-content">
+            <div class="pv-content-inner">
+              <div class="pv-breadcrumb">MavNext <span class="pv-breadcrumb-sep">/</span> Privacy</div>
+              <h1 class="pv-heading" tabindex="-1" data-page-title>Privacy notice</h1>
+              <p class="pv-version">Version ${version} · MavNext is an independent student pilot, not a UTA service.</p>
+
+              <section id="privacy-overview" class="pv-section">
+                <h2 class="pv-section-title">Overview</h2>
+                <p>MavNext collects only what is needed to run your club's workspace. We never sell your data, run ads, or use analytics trackers.</p>
+                <div class="pv-callout">
+                  <strong>Your privacy matters.</strong> This notice explains what information MavNext handles, why it is needed, who can access it, and where it is stored.
+                </div>
+              </section>
+
+              <hr class="pv-divider">
+
+              <section id="privacy-collect" class="pv-section">
+                <h2 class="pv-section-title">What we collect</h2>
+                <p>Your <strong>name</strong>, <strong>email address</strong>, expected graduation term, and optional major — plus the records your team creates: meetings, tasks, handoffs, and activity logs.</p>
+                <p>Your password is handled by our sign-in provider (Supabase Auth) and is <strong>never visible</strong> to MavNext or other users.</p>
+              </section>
+
+              <hr class="pv-divider">
+
+              <section id="privacy-why" class="pv-section">
+                <h2 class="pv-section-title">Why we need it</h2>
+                <p>To power your workspace: showing who is on the board, assigning tasks, and making officer transitions seamless. That is it — nothing else.</p>
+              </section>
+
+              <hr class="pv-divider">
+
+              <section id="privacy-who" class="pv-section">
+                <h2 class="pv-section-title">Who can see your information</h2>
+                <table class="pv-table">
+                  <thead>
+                    <tr><th>Information</th><th>Access</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>Graduation term &amp; major</td><td>Only you</td></tr>
+                    <tr><td>Name, email &amp; officer title</td><td>Your club members</td></tr>
+                    <tr><td>Club records (meetings, tasks, handoffs)</td><td>Organization members, based on role</td></tr>
+                    <tr><td>Password</td><td>No one — handled by Supabase Auth</td></tr>
+                  </tbody>
+                </table>
+                <p class="pv-table-note">Database-level security rules enforce these boundaries — not just the app interface.</p>
+              </section>
+
+              <hr class="pv-divider">
+
+              <section id="privacy-stored" class="pv-section">
+                <h2 class="pv-section-title">Where it is stored</h2>
+                <p>In a secure Supabase database with <strong>encrypted connections</strong>. Demo mode and "Use on this device" keep everything in your browser only — nothing is sent anywhere.</p>
+                <div class="pv-callout pv-callout--warn">
+                  <strong>Keep your secrets safe.</strong> Never put passwords, recovery codes, bank or card numbers, or private financial records in MavNext. Handoff sections describe procedures, not credentials.
+                </div>
+              </section>
+
+              <hr class="pv-divider">
+
+              <section id="privacy-choices" class="pv-section">
+                <h2 class="pv-section-title">Your choices</h2>
+                <ul class="pv-list">
+                  <li>Edit or update your profile at any time.</li>
+                  <li>Leave an organization whenever you need to.</li>
+                  <li>Ask the project team to delete your account and all associated data.</li>
+                </ul>
+                <p class="pv-footnote">Consent is recorded with this notice's version number and the time you agreed.</p>
+              </section>
+            </div>
+          </main>
+        </div>
+      </div>`;
     }
   };
 })();
