@@ -317,7 +317,7 @@
 
   // ---------- privacy notice ----------
   const privNavItem = (id, label, activeId) => html`
-    <a class="pv-nav-item${activeId === id ? ' pv-nav-item--active' : ''}" href="#privacy-${id}" data-pv-nav="${id}">${label}</a>`;
+    <a class="pv-nav-item${activeId === id ? ' pv-nav-item--active' : ''}" href="javascript:void(0)" data-pv-scroll="${id}">${label}</a>`;
 
   MN.views.privacy = {
     title: 'Privacy notice', bare: true,
@@ -413,6 +413,31 @@
           </main>
         </div>
       </div>`;
+    },
+    mount() {
+      // smooth-scroll sidebar nav + active tracking
+      document.querySelectorAll('[data-pv-scroll]').forEach(a => {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          const id = a.dataset.pvScroll;
+          const el = document.getElementById('privacy-' + id);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.querySelectorAll('.pv-nav-item').forEach(n => n.classList.remove('pv-nav-item--active'));
+          a.classList.add('pv-nav-item--active');
+        });
+      });
+      // update active on scroll
+      const sections = document.querySelectorAll('.pv-section[id]');
+      const content = document.querySelector('.pv-content');
+      if (content && sections.length) {
+        content.addEventListener('scroll', () => {
+          let cur = '';
+          sections.forEach(s => { if (s.offsetTop - content.scrollTop <= 80) cur = s.id.replace('privacy-', ''); });
+          document.querySelectorAll('[data-pv-scroll]').forEach(a => {
+            a.classList.toggle('pv-nav-item--active', a.dataset.pvScroll === cur);
+          });
+        });
+      }
     }
   };
 })();
