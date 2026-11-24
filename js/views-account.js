@@ -291,9 +291,8 @@
       if (!remoteOn()) return accountsUnavailable('Invitation');
       try { localStorage.setItem(PENDING_INVITE, p.id); } catch (e) { /* ignore */ }
       if (!R().userId()) {
-        return page(html`<h1 tabindex="-1" data-page-title>You've been invited to MavNext</h1>
-          <p class="muted" style="margin:8px 0 16px">Create an account, or sign in, with the email address this invitation was made for. You'll come back here to accept it.</p>
-          <div class="btn-row"><a class="btn btn-primary" href="#/signup">Create account</a><a class="btn" href="#/signin">Sign in</a></div>`);
+        MN.go('#/signup');
+        return page(html`<p class="muted">Redirecting to account creation…</p>`);
       }
       return page(html`<h1 tabindex="-1" data-page-title>Accept invitation</h1>
         <p class="muted" style="margin:8px 0 16px">Signed in as <strong>${R().userEmail()}</strong>. The invitation is checked against this email before access is granted.</p>
