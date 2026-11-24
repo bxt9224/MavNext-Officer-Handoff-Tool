@@ -91,6 +91,7 @@
       need(MN.can(me, 'handoff.create'));
       const now = MN.nowISO();
       const rec = Object.assign({ id: MN.uid('h'), orgId: org.id, answers: MN.blankAnswers(), includes: { taskIds: [], meetingIds: [] }, createdBy: me.id, createdAt: now, lastSavedAt: now }, input, { updatedAt: now });
+      console.log("[MN DEBUG] createHandoff rec:", JSON.stringify({ id: rec.id, orgId: rec.orgId, createdBy: rec.createdBy, outgoingMemberId: rec.outgoingMemberId, incomingMemberId: rec.incomingMemberId, role: rec.role }));
       return S().put('handoffs', rec).then(() => log('handoff.created', `started the ${rec.role} handoff`, { kind: 'handoff', id: rec.id })).then(() => rec);
     },
     updateHandoffMeta(id, patch) {

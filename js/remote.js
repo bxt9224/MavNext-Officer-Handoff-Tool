@@ -39,7 +39,13 @@
       const { coll, rec, op, id } = change;
       if (TABLE[coll]) {
         if (op === 'remove') return client.from(TABLE[coll]).delete().eq('id', id).then(ok);
-        return client.from(TABLE[coll]).upsert({ id: rec.id, org_id: rec.orgId, data: rec }).then(ok);
+        const row = { id: rec.id, org_id: rec.orgId, data: rec };
+        // Try insert first; on duplicate-key conflict, fall back to update.
+        // Using insert+catch instead of upsert avoids PostgREST requiring both
+        // INSERT and UPDATE RLS policies to pass on a single call.
+        return client.from(TABLE[coll]).insert(row).then(ok).catch(() =>
+          client.from(TABLE[coll]).update({ org_id: row.org_id, data: row.data }).eq('id', row.id).then(ok)
+        );
       }
       switch (coll) {
         case 'orgs': return client.from('organizations').update({ name: rec.name, current_term: rec.currentTerm, next_term: rec.nextTerm, listed: rec.listed !== false }).eq('id', rec.id).then(ok);
