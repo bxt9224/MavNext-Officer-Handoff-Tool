@@ -129,7 +129,7 @@ legend { padding: 0; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
 
 /* ---------- Entry screen ---------- */
 .entry { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.entry-brand { background: var(--panel); border-right: 1px solid var(--border); padding: var(--s8); display: flex; flex-direction: column; justify-content: center; gap: var(--s5); }
+.entry-brand { background: var(--blue); border-right: none; padding: var(--s8); display: flex; flex-direction: column; justify-content: center; gap: var(--s5); }
 .entry-brand img { width: 260px; height: auto; }
 .entry-brand h1 { font-size: 30px; max-width: 30ch; }
 .entry-brand .flow { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; font-size: 14px; color: var(--muted); }
@@ -267,31 +267,31 @@ legend { padding: 0; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
 .shell { display: flex; min-height: 100vh; }
 .sidebar {
   position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); z-index: 30;
-  background: var(--panel); border-right: 1px solid var(--border);
+  background: var(--blue); border-right: none;
   display: flex; flex-direction: column;
 }
-.sidebar-logo { height: var(--topbar-h); display: flex; align-items: center; padding: 0 var(--s5); border-bottom: 3px solid var(--orange); }
+.sidebar-logo { height: var(--topbar-h); display: flex; align-items: center; padding: 0 var(--s5); border-bottom: 2px solid var(--orange); background: var(--panel); }
 .sidebar-logo img { height: 30px; width: auto; display: block; }
 .nav { list-style: none; margin: 0; padding: var(--s4) var(--s3); display: flex; flex-direction: column; gap: 2px; }
 .nav a {
   position: relative; display: flex; align-items: center; gap: var(--s3);
   padding: 9px var(--s3); border-radius: var(--r);
-  color: var(--blue); font-size: 14px; font-weight: 600; text-decoration: none;
+  color: #FFFFFF; font-size: 14px; font-weight: 500; text-decoration: none;
 }
-.nav a:hover { background: var(--bg); color: var(--blue-hover); }
-.nav a[aria-current="page"] { background: var(--blue-tint); color: var(--blue); font-weight: 600; }
+.nav a:hover { background: rgba(255,255,255,0.12); color: #FFFFFF; }
+.nav a[aria-current="page"] { background: rgba(255,255,255,0.2); color: #FFFFFF; font-weight: 700; }
 .nav a[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 3px 3px 0; background: var(--orange); }
-.nav .count { margin-left: auto; font-size: 12px; font-weight: 600; background: var(--bg); color: var(--muted); border-radius: 999px; padding: 1px 8px; }
+.nav .count { margin-left: auto; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); border-radius: 999px; padding: 1px 8px; }
 .nav a[aria-current="page"] .count { background: #fff; color: var(--blue); }
-.sidebar-bottom { margin-top: auto; border-top: 1px solid var(--border); padding: var(--s3) var(--s3) var(--s4); }
+.sidebar-bottom { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.15); padding: var(--s3) var(--s3) var(--s4); }
 .sidebar-bottom .nav { padding: 0; }
-.pilot-note { font-size: 12px; color: var(--muted); padding: var(--s3) var(--s3) 0; line-height: 1.4; }
+.pilot-note { font-size: 12px; color: rgba(255,255,255,0.6); padding: var(--s3) var(--s3) 0; line-height: 1.4; }
 
 .main-col { flex: 1; min-width: 0; margin-left: var(--sidebar-w); display: flex; flex-direction: column; }
 .topbar {
   position: sticky; top: 0; z-index: 20; height: var(--topbar-h);
   display: flex; align-items: center; gap: var(--s4);
-  padding: 0 var(--s6); background: var(--panel); border-bottom: 3px solid var(--orange);
+  padding: 0 var(--s6); background: var(--panel); border-bottom: 2px solid var(--orange);
 }
 .topbar .menu-btn { display: none; }
 .org-select { display: flex; align-items: center; gap: var(--s2); }
@@ -377,7 +377,7 @@ table.list tr:last-child td { border-bottom: 0; }
 .progress-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 
 /* ---------- Empty states ---------- */
-.empty { text-align: center; padding: var(--s6) var(--s5); }
+.empty { text-align: center; padding: var(--s4) var(--s5); }
 .empty .icon { width: 28px; height: 28px; color: var(--blue); margin-bottom: var(--s2); }
 .empty h3 { margin-bottom: 4px; }
 .empty p { color: var(--muted); font-size: 14px; margin-bottom: var(--s4); max-width: 44ch; margin-left: auto; margin-right: auto; }
